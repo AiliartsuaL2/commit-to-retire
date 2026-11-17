@@ -1,4 +1,4 @@
-import { currentEvent, type GameState } from '../engine'
+import { currentEvent, remainingEvents, type GameState } from '../engine'
 import { useGame } from '../store/game'
 import { Badge, Button, Choice, Screen, StatusHeader } from '../ui'
 
@@ -16,7 +16,7 @@ export function EventScreen({ game }: { game: GameState }) {
   // 결과 문구 보여주기
   if (lastOutcome) {
     const tone = lastOutcome.tone ? TONE_LABEL[lastOutcome.tone] : null
-    const remaining = game.pendingEvents.length
+    const remaining = remainingEvents(game)
     return (
       <Screen footer={<Button onClick={continueAfterOutcome}>{remaining > 0 ? '다음 일' : '올해 마무리하기'}</Button>}>
         <StatusHeader game={game} />
@@ -50,7 +50,7 @@ export function EventScreen({ game }: { game: GameState }) {
       <div className="flex flex-col gap-3 py-2">
         <div className="flex items-center gap-2">
           <Badge>{event.category}</Badge>
-          <span className="text-xs text-gray-400">올해 남은 일 {game.pendingEvents.length}개</span>
+          <span className="text-xs text-gray-400">올해 남은 일 {remainingEvents(game)}개</span>
         </div>
         <p className="text-5xl">{event.emoji}</p>
         <h1 className="text-2xl font-bold">{event.title}</h1>

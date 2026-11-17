@@ -2,12 +2,10 @@
 
 import {
   companyTypeById,
-  companyTypes,
   educationById,
   events,
   focusById,
   gradeThresholds,
-  industries,
   industryById,
   rankById,
   ranks,
@@ -16,16 +14,15 @@ import {
 } from '../data'
 import { checkAchievements, evaluateRetirement } from './ending'
 import { generateFeed } from './feed'
+import { applicationLimit, generatePostings, rollHeadhunterOffer } from './jobs'
 import { createRng, type Rng } from './rng'
 import {
   aiPressure,
   applyEffects,
   clamp,
   clampStat,
-  hiringScore,
   marketSalary,
   meetsStats,
-  pickCompanyName,
   STAT_KEYS,
   unlock,
 } from './rules'
@@ -36,7 +33,6 @@ import type {
   GameEvent,
   GameState,
   Grade,
-  JobOffer,
   RankId,
   Stats,
 } from './types'
@@ -91,9 +87,19 @@ export function isEligible(event: GameEvent, s: GameState): boolean {
 
 // ─── 이벤트 ────────────────────────────────────────────
 
+/** 지금 보여줄 이벤트. 데이터에서 사라진 이벤트(예전 세이브 등)는 건너뛴다 */
 export function currentEvent(state: GameState): GameEvent | null {
-  const id = state.pendingEvents[0]
+  const id = state.pendingEvents.find((e) => eventById[e])
   return id ? eventById[id] : null
+}
+
+/** 올해 남은 이벤트 수 (사라진 이벤트는 셈하지 않는다) */
+export function remainingEvents(state: GameState): number {
+  return state.pendingEvents.filter((e) => eventById[e]).length
+}
+
+function hasPendingEvents(state: GameState): boolean {
+  return remainingEvents(state) > 0
 }
 
 export function chooseEventOption(
@@ -110,7 +116,7 @@ export function chooseEventOption(
   const outcome = rng.weighted(choice.outcomes, (o) => (o.tone === 'unlucky' ? o.chance * failMultiplier : o.chance))!
 
   applyEffects(s, outcome.effects)
-  s.pendingEvents.shift()
+  s.pendingEvents = s.pendingEvents.slice(s.pendingEvents.indexOf(event.id) + 1)
   s.seenEvents.push(event.id)
   s.yearEvents.push({ eventId: event.id, choiceIndex, outcomeText: outcome.text })
   s.rngState = rng.state
@@ -131,10 +137,11 @@ export function checkFailMultiplier(stats: Stats, check: Partial<Stats> | undefi
 // ─── 연말 ──────────────────────────────────────────────
 
 export function finishYear(state: GameState): GameState {
-  if (state.phase !== 'event' || state.pendingEvents.length > 0) {
+  if (state.phase !== 'event' || hasPendingEvents(state)) {
     throw new Error('이벤트를 모두 끝내야 연말로 갈 수 있어요')
   }
   const s = structuredClone(state)
+  s.pendingEvents = []
   const rng = createRng(s.rngState)
   const triggers: FeedTrigger[] = []
   const rankBefore = s.rank
@@ -164,8 +171,10 @@ export function finishYear(state: GameState): GameState {
   // 저축
   s.assets += Math.round(s.salary * 0.2)
 
-  // 이직 제안
-  s.offers = generateOffers(s, grade, rng)
+  // 이직 시장: 가끔 오는 헤드헌터 제안 + 직접 지원할 채용 공고
+  s.offers = rollHeadhunterOffer(s, grade, s.focus!, rng)
+  s.postings = generatePostings(s, rng)
+  s.applicationsLeft = applicationLimit(s.focus, s.unemployed)
 
   s.yearsAtCompany += 1
   s.yearsAtRank = s.rank === rankBefore ? s.yearsAtRank + 1 : 0
@@ -329,44 +338,4 @@ function rollCompanyRisk(s: GameState, rng: Rng): FeedTrigger | null {
   }
   s.unemployed = true
   return 'layoff'
-}
-
-function generateOffers(s: GameState, grade: Grade, rng: Rng): JobOffer[] {
-  const focus = focusById[s.focus!]
-  let count = Math.floor(
-    rng.range(0, 1.2) + (focus.offerBonus + (s.offerBonus ?? 0)) * 0.8 + s.stats.reputation / 35 + (grade === 'S' ? 0.5 : 0),
-  )
-  if (s.unemployed) count = Math.max(count, 2)
-
-  const offers: JobOffer[] = []
-  for (let attempt = 0; attempt < count * 4 && offers.length < count; attempt++) {
-    const type = rng.pick(companyTypes).id
-    const industry = rng.pick(industries).id
-    const score = hiringScore(s.stats, s.profile.education, type) + rng.range(-8, 8)
-    if (score < companyTypeById[type].hiringBar) continue
-    const name = pickCompanyName(rng, type, s.company.name)
-    if (offers.some((o) => o.company.name === name) || name === s.company.name) continue
-    offers.push(makeOffer(s, type, industry, name, rng))
-  }
-
-  // 실직 상태면 최소 2곳은 보장 (문턱이 가장 낮은 회사)
-  while (s.unemployed && offers.length < 2) {
-    const type = offers.length === 0 ? 'sme_si' : 'agency'
-    offers.push(makeOffer(s, type, rng.pick(industries).id, pickCompanyName(rng, type), rng))
-  }
-  return offers
-}
-
-function makeOffer(
-  s: GameState,
-  type: JobOffer['company']['type'],
-  industry: JobOffer['company']['industry'],
-  name: string,
-  rng: Rng,
-): JobOffer {
-  const raise = s.unemployed ? rng.range(0.9, 1.1) : rng.range(1.08, 1.3)
-  const market = marketSalary(type, industry, s.rank, s.careerYear)
-  // 시장 연봉의 1.5배를 넘는 제안은 없다
-  const salary = Math.round(Math.min(Math.max(s.salary * raise, market), market * 1.5))
-  return { company: { name, type, industry }, rank: s.rank, salary }
 }

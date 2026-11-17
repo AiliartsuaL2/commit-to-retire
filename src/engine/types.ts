@@ -269,6 +269,28 @@ export interface JobOffer {
   company: Company
   rank: RankId
   salary: number
+  /** 헤드헌터가 가져온 제안인지, 내가 지원해서 붙은 곳인지 */
+  source?: 'headhunter' | 'application'
+}
+
+/** 채용 공고. 지원하면 서류 → 코딩테스트 → 기술 면접 → 임원 면접을 거친다 */
+export interface JobPosting {
+  company: Company
+  rank: RankId
+  /** 합격하면 받을 연봉 (만 원) */
+  salary: number
+  applied: boolean
+  /** 지원 결과: 최종 합격이면 'passed', 떨어졌으면 떨어진 단계 */
+  result?: 'passed' | HiringStage
+}
+
+export type HiringStage = 'resume' | 'codingTest' | 'techInterview' | 'finalInterview'
+
+export interface ApplicationResult {
+  posting: JobPosting
+  /** 통과한 단계들. 마지막 단계에서 떨어졌으면 failedAt에 표시 */
+  passed: HiringStage[]
+  failedAt: HiringStage | null
 }
 
 export interface Profile {
@@ -289,6 +311,8 @@ export interface EventLogEntry {
 }
 
 export interface YearRecord {
+  /** 실직 후 취업 준비로 보낸 해 */
+  gap?: boolean
   calendarYear: number
   age: number
   company: Company
@@ -367,6 +391,10 @@ export interface GameState {
   yearStart: { stats: Stats; salary: number }
 
   offers: JobOffer[]
+  /** 이번 허브의 채용 공고. 예전 세이브에는 없을 수 있다 */
+  postings?: JobPosting[]
+  /** 이번 허브에서 남은 지원 횟수 */
+  applicationsLeft?: number
   flags: Flag[]
   counters: Record<CounterKey, number>
   achievements: string[]

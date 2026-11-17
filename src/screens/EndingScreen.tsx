@@ -83,10 +83,10 @@ export function EndingScreen({ game, onNew }: { game: GameState; onNew: () => vo
           {game.history.map((h) => (
             <div key={h.calendarYear} className="flex items-center gap-2">
               <span className="w-10 shrink-0 text-xs text-gray-400 tabular-nums">{h.calendarYear}</span>
-              <span className="min-w-0 flex-1 truncate">
-                {companyTypeById[h.company.type].emoji} {h.company.name} · {rankById[h.rank].label}
+              <span className={`min-w-0 flex-1 truncate ${h.gap ? 'text-gray-400' : ''}`}>
+                {h.gap ? '🎒 취업 준비' : `${companyTypeById[h.company.type].emoji} ${h.company.name} · ${rankById[h.rank].label}`}
               </span>
-              <span className="w-5 text-right font-bold">{h.grade}</span>
+              <span className="w-5 text-right font-bold">{h.gap ? '-' : h.grade}</span>
             </div>
           ))}
         </Card>

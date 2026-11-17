@@ -4,6 +4,7 @@ import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import {
   acceptOffer,
+  applyToPosting,
   acknowledgeYear,
   chooseEventOption,
   chooseTrack,
@@ -11,8 +12,11 @@ import {
   declineOffers,
   finishYear,
   nextYear,
+  remainingEvents,
   retireNow,
+  spendGapYear,
   startYear,
+  type ApplicationResult,
   type EventOutcome,
   type FocusId,
   type GameState,
@@ -33,6 +37,12 @@ interface Store {
   acceptOffer: (index: number) => void
   declineOffers: () => void
   chooseTrack: (track: 'manager' | 'ic') => void
+  /** 채용 공고에 지원한다. 결과는 lastApplication에 담겨 화면이 단계별로 보여준다 */
+  apply: (postingIndex: number) => void
+  dismissApplication: () => void
+  /** 지원 결과 연출 (저장하지 않는다) */
+  lastApplication: ApplicationResult | null
+  spendGapYear: () => void
   nextYear: () => void
   retire: () => void
   reset: () => void
@@ -65,7 +75,7 @@ export const useGame = create<Store>()(
         continueAfterOutcome: () => {
           set({ lastOutcome: null })
           const game = get().game
-          if (game && game.phase === 'event' && game.pendingEvents.length === 0) {
+          if (game && game.phase === 'event' && remainingEvents(game) === 0) {
             set({ game: finishYear(game) })
           }
         },
@@ -73,9 +83,18 @@ export const useGame = create<Store>()(
         acceptOffer: (index) => update((g) => acceptOffer(g, index)),
         declineOffers: () => update(declineOffers),
         chooseTrack: (track) => update((g) => chooseTrack(g, track)),
+        lastApplication: null,
+        apply: (postingIndex) => {
+          const game = get().game
+          if (!game) return
+          const result = applyToPosting(game, postingIndex)
+          set({ game: result.state, lastApplication: result.result })
+        },
+        dismissApplication: () => set({ lastApplication: null }),
+        spendGapYear: () => update(spendGapYear),
         nextYear: () => update(nextYear),
         retire: () => update(retireNow),
-        reset: () => set({ game: null, lastOutcome: null }),
+        reset: () => set({ game: null, lastOutcome: null, lastApplication: null }),
       }
     },
     {

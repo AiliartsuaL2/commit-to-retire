@@ -1,5 +1,6 @@
 // 허브(연말 이후 확인할 일): 이직 수락, 트랙 선택, 은퇴, 다음 해
 
+import { rankById } from '../data'
 import { evaluateRetirement } from './ending'
 import type { GameState } from './types'
 
@@ -26,9 +27,12 @@ export function acceptOffer(state: GameState, index: number): GameState {
   s.salary = offer.salary
   if (offer.rank !== s.rank) s.yearsAtRank = 0
   s.rank = offer.rank
+  if (rankById[s.rank].fameScore > rankById[s.bestRank].fameScore) s.bestRank = s.rank
   s.yearsAtCompany = 0
   s.unemployed = false
   s.offers = []
+  s.postings = []
+  s.applicationsLeft = 0
   s.counters.jobChanges += 1
   return s
 }
@@ -41,7 +45,7 @@ export function declineOffers(state: GameState): GameState {
 export function nextYear(state: GameState): GameState {
   if (state.phase !== 'hub') throw new Error('허브에서만 다음 해로 갈 수 있어요')
   if (state.unemployed) throw new Error('먼저 새 회사를 골라야 해요')
-  return { ...state, offers: [], phase: 'year_start' }
+  return { ...state, offers: [], postings: [], applicationsLeft: 0, phase: 'year_start' }
 }
 
 export function retireNow(state: GameState): GameState {

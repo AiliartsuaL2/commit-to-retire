@@ -94,9 +94,9 @@ export const gradeThresholds: { grade: Grade; minScore: number; raise: number }[
 
 /** 명성 점수 → 엔딩 등급 */
 export const fameGrades: { grade: FameGrade; minScore: number; title: string }[] = [
-  { grade: 'S', minScore: 130, title: '한국 IT의 전설' },
-  { grade: 'A', minScore: 105, title: '업계가 아는 이름' },
-  { grade: 'B', minScore: 80, title: '믿고 맡기는 시니어' },
+  { grade: 'S', minScore: 140, title: '한국 IT의 전설' },
+  { grade: 'A', minScore: 112, title: '업계가 아는 이름' },
+  { grade: 'B', minScore: 85, title: '믿고 맡기는 시니어' },
   { grade: 'C', minScore: 50, title: '무난한 월급쟁이' },
   { grade: 'D', minScore: -Infinity, title: '치킨집 사장님' },
 ]

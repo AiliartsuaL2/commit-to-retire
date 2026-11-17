@@ -5,7 +5,7 @@ import { createRng } from './rng'
 import { createGame, firstJobOptions, startingStats } from './setup'
 import type { GameState, Profile } from './types'
 import { events } from '../data'
-import { acknowledgeYear, checkFailMultiplier, chooseEventOption, finishYear, isEligible, startYear } from './year'
+import { acknowledgeYear, checkFailMultiplier, chooseEventOption, currentEvent, finishYear, isEligible, startYear } from './year'
 
 /** 선택지는 언제나 고를 수 있으니 첫 번째를 고른다 */
 const freeChoice = (_s: GameState) => 0
@@ -130,6 +130,16 @@ describe('이벤트 조건', () => {
     const moved = { ...base(), counters: { ...base().counters, jobChanges: 1 } }
     expect(isEligible(onboarding, moved)).toBe(true)
     expect(isEligible(onboarding, { ...moved, yearsAtCompany: 1 })).toBe(false)
+  })
+})
+
+describe('사라진 이벤트', () => {
+  it('세이브에 없는 이벤트가 남아 있어도 연말로 넘어갈 수 있다', () => {
+    const g = createGame({ profile, companyType: 'sme_si', industry: 'si_sm', seed: 1 })
+    let s = startYear(g, 'study')
+    s = { ...s, pendingEvents: ['deleted_event'] }
+    expect(currentEvent(s)).toBeNull()
+    expect(() => finishYear(s)).not.toThrow()
   })
 })
 
