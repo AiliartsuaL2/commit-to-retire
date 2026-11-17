@@ -15,7 +15,7 @@ export function randomGame(seed: number): GameState {
   const rng = createRng(seed)
   const profile: Profile = {
     name: '봇',
-    emoji: '🧑‍💻',
+    emoji: '🤓',
     startAge: rng.int(START_AGE_MIN, START_AGE_MAX),
     education: rng.pick(educations).id,
     specialty: rng.pick(specialties).id,

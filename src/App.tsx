@@ -1,16 +1,43 @@
+import { useState } from 'react'
+import { EndingScreen } from './screens/EndingScreen'
+import { EventScreen } from './screens/EventScreen'
+import { HubScreen } from './screens/HubScreen'
+import { SetupScreen } from './screens/SetupScreen'
+import { TitleScreen } from './screens/TitleScreen'
+import { YearEndScreen } from './screens/YearEndScreen'
+import { YearStartScreen } from './screens/YearStartScreen'
+import { useGame } from './store/game'
+
+type View = 'title' | 'setup' | 'game'
+
 export default function App() {
-  return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-4 p-6">
-      <p className="text-sm text-gray-500">신입 첫 출근, 모니터 앞에서 시작해요</p>
-      <h1 className="text-4xl font-bold leading-tight">
-        커밋에서
-        <br />
-        은퇴까지
-      </h1>
-      <p className="text-gray-600">한 해의 선택이 쌓여 커리어가 돼요.</p>
-      <button className="rounded-xl bg-blue-500 py-4 font-semibold text-white" disabled>
-        준비 중
-      </button>
-    </main>
-  )
+  const game = useGame((s) => s.game)
+  const reset = useGame((s) => s.reset)
+  const [view, setView] = useState<View>('title')
+
+  // 새 게임이 만들어지면 바로 게임 화면으로
+  const current: View = view === 'setup' && game ? 'game' : view
+
+  if (current === 'title' || !game) {
+    if (current === 'setup') return <SetupScreen onBack={() => setView('title')} />
+    return <TitleScreen onNew={() => setView('setup')} onContinue={() => setView('game')} />
+  }
+
+  const startOver = () => {
+    reset()
+    setView('setup')
+  }
+
+  switch (game.phase) {
+    case 'year_start':
+      return <YearStartScreen game={game} />
+    case 'event':
+      return <EventScreen game={game} />
+    case 'year_end':
+      return <YearEndScreen game={game} />
+    case 'hub':
+      return <HubScreen game={game} />
+    case 'retired':
+      return <EndingScreen game={game} onNew={startOver} />
+  }
 }

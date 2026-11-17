@@ -23,6 +23,7 @@ src/
   engine/   게임 규칙 (순수 TS 함수, UI 의존 없음)
   data/     회사·이벤트·반응 콘텐츠 (타입 붙은 TS 배열)
   store/    Zustand 상태 + localStorage 저장
-  screens/  화면 컴포넌트
+  screens/  화면 (phase별 한 화면)
+  ui/       공통 UI 조각 (모바일 레이아웃, 버튼, 능력치 바)
 docs/       기획 문서
 ```

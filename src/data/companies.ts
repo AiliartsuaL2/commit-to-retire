@@ -83,7 +83,7 @@ export const companyTypes: CompanyTypeDef[] = [
   {
     id: 'agency',
     label: '외주 에이전시',
-    emoji: '🧑‍💻',
+    emoji: '💻',
     baseSalary: 3000,
     stockOption: false,
     growth: 1.1,

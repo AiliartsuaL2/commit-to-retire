@@ -11,7 +11,7 @@ const freeChoice = (s: GameState) => currentEvent(s)!.choices.findIndex((c) => !
 
 const profile: Profile = {
   name: '테스트',
-  emoji: '🧑‍💻',
+  emoji: '🤓',
   startAge: 26,
   education: 'local_cs',
   specialty: 'backend',
