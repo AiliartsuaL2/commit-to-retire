@@ -1,8 +1,8 @@
 // 공통 UI 조각. 모바일 우선: 폭 최대 28rem, 하단 고정 버튼.
 
 import type { ReactNode } from 'react'
-import { companyTypeById, industryById, rankById, statLabels } from '../data'
-import { formatSalary, type GameState, type StatKey, type Stats } from '../engine'
+import { achievementById, BURNOUTS_TO_RETIRE, companyTypeById, industryById, rankById, statLabels } from '../data'
+import { formatSalary, type Effects, type GameState, type StatKey, type Stats } from '../engine'
 
 export function Screen({
   children,
@@ -168,7 +168,45 @@ export function StatusHeader({ game }: { game: GameState }) {
         </div>
       </div>
       <StaminaBar value={game.stamina} />
+      {game.counters.burnouts > 0 && (
+        <p className="text-xs font-medium text-red-500">
+          🫠 번아웃 {game.counters.burnouts}/{BURNOUTS_TO_RETIRE} · {BURNOUTS_TO_RETIRE}번이면 은퇴해요
+        </p>
+      )}
     </Card>
+  )
+}
+
+type Tone = 'gray' | 'blue' | 'red' | 'green' | 'amber'
+
+const signed = (n: number) => (n > 0 ? `+${n}` : `${n}`)
+
+/** 선택 결과로 실제 바뀐 수치를 칩으로 보여준다. 확률은 보여주지 않는다 */
+export function EffectChips({ effects }: { effects: Effects }) {
+  const chips: { text: string; tone: Tone }[] = []
+  const add = (text: string, good: boolean) => chips.push({ text, tone: good ? 'green' : 'red' })
+
+  if (effects.stamina) add(`체력 ${signed(effects.stamina)}`, effects.stamina > 0)
+  for (const key of STAT_ORDER) {
+    const delta = effects.stats?.[key]
+    if (delta) add(`${statLabels[key]} ${signed(delta)}`, delta > 0)
+  }
+  if (effects.gradeBonus) add(`고과 점수 ${signed(effects.gradeBonus)}`, effects.gradeBonus > 0)
+  if (effects.salaryPct) add(`연봉 ${signed(Math.round(effects.salaryPct * 100))}%`, effects.salaryPct > 0)
+  if (effects.assets) add(`자산 ${effects.assets > 0 ? '+' : '−'}${formatSalary(Math.abs(effects.assets))}`, effects.assets > 0)
+  if (effects.offerBonus) chips.push({ text: '헤드헌터 연락 ↑', tone: 'blue' })
+  const achievement = effects.achievement ? achievementById[effects.achievement] : undefined
+  if (achievement) chips.push({ text: `🏆 ${achievement.title}`, tone: 'amber' })
+
+  if (chips.length === 0) return <p className="text-sm text-gray-400">달라진 건 없어요</p>
+  return (
+    <div className="flex flex-wrap justify-center gap-1.5">
+      {chips.map((c) => (
+        <Badge key={c.text} tone={c.tone}>
+          {c.text}
+        </Badge>
+      ))}
+    </div>
   )
 }
 

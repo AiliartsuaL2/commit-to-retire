@@ -1,6 +1,6 @@
 import { currentEvent, remainingEvents, type GameState } from '../engine'
 import { useGame } from '../store/game'
-import { Badge, Button, Choice, Screen, StatusHeader } from '../ui'
+import { Badge, Button, Choice, EffectChips, Screen, StatusHeader } from '../ui'
 
 const TONE_LABEL = {
   lucky: { text: '운이 좋았어요', tone: 'green' },
@@ -27,6 +27,7 @@ export function EventScreen({ game }: { game: GameState }) {
             </div>
           )}
           <p className="text-xl font-semibold leading-relaxed">{lastOutcome.text}</p>
+          <EffectChips effects={lastOutcome.effects} />
         </div>
       </Screen>
     )

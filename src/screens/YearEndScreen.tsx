@@ -1,4 +1,4 @@
-import { events, platformLabels, rankById } from '../data'
+import { BURNOUT_RESET_STAMINA, BURNOUTS_TO_RETIRE, events, platformLabels, rankById } from '../data'
 import { formatSalary, type FeedPlatform, type FeedTrigger, type GameState, type Grade } from '../engine'
 import { useGame } from '../store/game'
 import { Badge, Button, Card, Screen, StatBars } from '../ui'
@@ -56,6 +56,17 @@ export function YearEndScreen({ game }: { game: GameState }) {
             </Badge>
           ))}
         </div>
+      )}
+
+      {record.triggers.includes('burnout') && (
+        <Card className="bg-red-50">
+          <p className="font-semibold text-red-600">
+            번아웃이 왔어요 ({game.counters.burnouts}/{BURNOUTS_TO_RETIRE})
+          </p>
+          <p className="text-sm text-red-500">
+            올해 고과는 D로 처리됐고 체력은 {BURNOUT_RESET_STAMINA}에서 다시 시작해요. {BURNOUTS_TO_RETIRE}번째 번아웃이면 은퇴해요.
+          </p>
+        </Card>
       )}
 
       <Card className="flex flex-col gap-1">
