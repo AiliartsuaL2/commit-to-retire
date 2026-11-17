@@ -89,7 +89,7 @@ export function YearEndScreen({ game }: { game: GameState }) {
           <p className="text-sm font-medium text-gray-600">올해 있었던 일</p>
           {record.events.map((e) => (
             <div key={e.eventId}>
-              <p className="text-sm font-semibold">{eventTitle[e.eventId]}</p>
+              <p className="text-sm font-semibold">{e.title ?? eventTitle[e.eventId]}</p>
               <p className="text-sm text-gray-600">{e.outcomeText}</p>
             </div>
           ))}

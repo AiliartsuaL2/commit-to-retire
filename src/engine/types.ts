@@ -216,10 +216,28 @@ export interface EventConditions {
   maxJobChanges?: number
 }
 
+/** 1 가벼운 일 · 2 보통 · 3 큰일 */
+export type Severity = 1 | 2 | 3
+
+/** 변수 후보: 문자열 목록에서 하나를 고르거나, 정수 범위(min~max)에서 굴린다 */
+export type EventVarSource = string[] | { min: number; max: number }
+
+/** 심각도별로 후보를 달리 둘 수 있다 ([가벼움, 보통, 큰일]). severity: true인 이벤트에서만 쓴다 */
+export type EventVarDef = EventVarSource | { bySeverity: [EventVarSource, EventVarSource, EventVarSource] }
+
+/** 같은 사건의 다른 장면. 제목·본문만 다르고 선택지와 결과는 같다 */
+export interface EventVariant {
+  title: string
+  text: string
+  /** 이 장면이 나올 수 있는 조건 (이벤트 자체의 조건에 더해진다) */
+  conditions?: EventConditions
+}
+
 export interface GameEvent {
   id: string
   category: EventCategory
   emoji: string
+  /** 제목·본문·선택지·결과 문구에 {name} {company} {rank}와 vars의 {변수}를 쓸 수 있고, 뒤에 (이)가 (으)로 같은 조사 표기를 붙일 수 있다 */
   title: string
   text: string
   conditions?: EventConditions
@@ -227,7 +245,25 @@ export interface GameEvent {
   weight: number
   /** 한 판에 한 번만 */
   once?: boolean
+  /**
+   * 뽑힐 때 심각도(1~3)를 굴린다. 심각할수록 결과의 체력·고과·능력치 변화가 커지고 실패 확률이 오른다
+   * (배수는 src/data/balance.ts)
+   */
+  severity?: boolean
+  /** 뽑힐 때 굴리는 변수. 문구에 {변수이름}으로 쓴다 */
+  vars?: Record<string, EventVarDef>
+  /** 다른 장면들. 기본 장면(title·text)과 조건이 맞는 변형 중 하나가 뽑힌다 */
+  variants?: EventVariant[]
   choices: EventChoice[]
+}
+
+/** 올해 뽑힌 이벤트 한 건. 굴린 값을 저장해 두어 이어하기를 해도 같은 장면이 나온다 */
+export interface PendingEvent {
+  id: string
+  severity: Severity
+  /** variants의 인덱스. 기본 장면이면 null */
+  variant: number | null
+  vars: Record<string, string>
 }
 
 // ─── 커뮤니티 반응 ─────────────────────────────────────
@@ -315,6 +351,10 @@ export interface EventLogEntry {
   eventId: string
   choiceIndex: number
   outcomeText: string
+  /** 그때 화면에 보인 제목 (이모지 포함, 변수가 채워진 것). 예전 세이브에는 없을 수 있다 */
+  title?: string
+  /** 심각도를 굴린 이벤트였다면 그 값 */
+  severity?: Severity
 }
 
 export interface YearRecord {
@@ -386,8 +426,8 @@ export interface GameState {
 
   /** 올해 선택한 집중 */
   focus: FocusId | null
-  /** 올해 남은 이벤트 */
-  pendingEvents: string[]
+  /** 올해 남은 이벤트. 예전 세이브에는 굴린 값 없이 id 문자열만 들어 있을 수 있다 */
+  pendingEvents: (string | PendingEvent)[]
   /** 올해 고른 이벤트 기록 */
   yearEvents: EventLogEntry[]
   /** 올해 고과에 더해질 점수 */

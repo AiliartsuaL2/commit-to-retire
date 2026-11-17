@@ -4,6 +4,11 @@ import type { GameEvent } from '../engine/types'
 // - 선택지마다 outcomes의 chance 합은 1 (data.test.ts가 검사)
 // - 확률과 능력치 판정(check)은 플레이어에게 보이지 않는다. check가 있는 선택지는 실패(unlucky)와 성공 결과가 모두 필요
 // - 문구는 해요체
+// - 자주 나오는 이벤트는 볼 때마다 달라지게 한다:
+//   severity: true → 뽑힐 때 심각도(1 가벼움 · 2 보통 · 3 큰일)를 굴려 결과의 체력·고과·능력치 변화와 실패 확률이 달라진다
+//   vars → 뽑힐 때 굴리는 변수. 문구에 {이름}으로 쓰고, 뒤에 (이)가 · (을)를 · (으)로 같은 조사 표기를 붙일 수 있다.
+//          bySeverity로 심각도별 후보를 따로 둘 수 있다. {name} {company} {rank}는 언제나 쓸 수 있다
+//   variants → 같은 선택지를 쓰는 다른 장면(제목·본문). 결과 문구와 어긋나지 않게 쓴다
 
 const STARTUPS = ['seed', 'series_b', 'unicorn'] as const
 
@@ -13,9 +18,30 @@ export const events: GameEvent[] = [
     id: 'friday_deploy',
     category: '장애',
     emoji: '🚨',
-    title: '금요일 18시 배포',
-    text: "팀장이 '간단한 거니까 지금 배포하고 퇴근하자'고 해요.",
+    title: '금요일 {hour}시 배포',
+    text: "팀장이 '{change} 정도는 간단하니까 지금 배포하고 퇴근하자'고 해요.",
     weight: 10,
+    severity: true,
+    vars: {
+      hour: { min: 17, max: 19 },
+      change: {
+        bySeverity: [
+          ['버튼 문구 수정', '오타 수정', '배너 이미지 교체'],
+          ['쿠폰 기능', '검색 필터 개편', '알림 설정 화면'],
+          ['결제 모듈 교체', '회원 DB 마이그레이션', '로그인 방식 개편'],
+        ],
+      },
+    },
+    variants: [
+      {
+        title: '연휴 전날 배포',
+        text: "내일부터 연휴예요. 팀장이 '{change} 정도는 올리고 가자'고 해요. 다들 벌써 가방을 싸고 있어요.",
+      },
+      {
+        title: '공지 없는 {hour}시 배포',
+        text: "오늘은 금요일이에요. 팀장이 '{change} 정도는 공지 없이 조용히 올리자'고 해요.",
+      },
+    ],
     choices: [
       {
         label: '그냥 배포한다',
@@ -23,7 +49,7 @@ export const events: GameEvent[] = [
           { chance: 0.6, text: '무사히 퇴근했어요.', tone: 'lucky', effects: {} },
           {
             chance: 0.4,
-            text: '주말 내내 롤백했어요.',
+            text: '{change}(이)가 터져서 주말 내내 롤백했어요.',
             tone: 'unlucky',
             effects: { stamina: -20, stats: { reputation: -2 }, counters: { incidents: 1 }, achievement: 'weekend_rollback' },
           },
@@ -48,15 +74,34 @@ export const events: GameEvent[] = [
     id: 'dawn_db_lock',
     category: '장애',
     emoji: '🌙',
-    title: '새벽 3시 DB 락',
-    text: '알림이 울려요. 주문 테이블에 락이 걸려서 서비스가 멈췄어요.',
+    title: '새벽 {hour}시 DB 락',
+    text: '알림이 울려요. {table} 테이블에 락이 걸려서 {scope}.',
     weight: 8,
+    severity: true,
+    vars: {
+      hour: { min: 2, max: 5 },
+      table: ['주문', '결제', '회원', '재고', '정산'],
+      scope: {
+        bySeverity: [
+          ['관리자 화면이 느려졌어요', '일부 요청이 밀리고 있어요'],
+          ['서비스가 멈췄어요', '앱이 계속 로딩만 돌아요'],
+          ['서비스 전체가 멈췄고 대표님 전화가 오고 있어요', '서비스 전체가 멈췄고 실시간 검색어에 올랐어요'],
+        ],
+      },
+      minutes: { bySeverity: [{ min: 5, max: 15 }, { min: 20, max: 40 }, { min: 50, max: 90 }] },
+    },
+    variants: [
+      {
+        title: '연휴 새벽 {hour}시 DB 락',
+        text: '연휴 당직인데 알림이 울려요. {table} 테이블에 락이 걸려서 {scope}.',
+      },
+    ],
     choices: [
       {
         label: '혼자 원인을 찾는다',
         check: { coding: 50 },
         outcomes: [
-          { chance: 0.7, text: '30분 만에 범인 쿼리를 찾아 죽였어요. 아침에 팀장이 칭찬했어요.', tone: 'skill', effects: { stamina: -8, gradeBonus: 8, counters: { incidents: 1 } } },
+          { chance: 0.7, text: '{minutes}분 만에 범인 쿼리를 찾아 죽였어요. 아침에 팀장이 칭찬했어요.', tone: 'skill', effects: { stamina: -8, gradeBonus: 8, counters: { incidents: 1 } } },
           { chance: 0.3, text: '해 뜰 때까지 헤맸어요. 결국 선배가 5분 만에 해결했어요.', tone: 'unlucky', effects: { stamina: -15, stats: { coding: 2 }, counters: { incidents: 1 } } },
         ],
       },
@@ -106,9 +151,25 @@ export const events: GameEvent[] = [
     id: 'legacy_no_comment',
     category: '레거시',
     emoji: '🦴',
-    title: '주석 없는 20년 된 코드',
-    text: '3,000줄짜리 함수를 고쳐야 해요. 변수 이름은 a1, a2, temp3이에요.',
+    title: '주석 없는 {age}년 된 코드',
+    text: '{lines}줄짜리 함수를 고쳐야 해요. 변수 이름이 전부 {names} 같은 식이에요.',
     weight: 9,
+    severity: true,
+    vars: {
+      age: { min: 8, max: 25 },
+      lines: { bySeverity: [['300', '500'], ['2,000', '3,000'], ['8,000', '12,000']] },
+      names: ['a1, a2, temp3', 'data, data2, dataFinal', 'x, xx, xxx', 'tmp, tmp_new, tmp_real'],
+    },
+    variants: [
+      {
+        title: '퇴사자가 남긴 {age}년 된 배치',
+        text: '아무도 내용을 모르는 {lines}줄짜리 배치를 고쳐야 해요. 변수 이름이 전부 {names} 같은 식이에요.',
+      },
+      {
+        title: '외주사가 납품하고 사라진 코드',
+        text: '{age}년 전 외주사가 납품한 {lines}줄짜리 함수를 고쳐야 해요. 외주사는 폐업했고 변수 이름이 전부 {names} 같은 식이에요.',
+      },
+    ],
     choices: [
       {
         label: '이참에 리팩토링한다',
@@ -131,14 +192,21 @@ export const events: GameEvent[] = [
     category: '레거시',
     emoji: '⚠️',
     title: '"건드리지 마시오" 모듈',
-    text: '주석에 "이 코드는 건드리지 마시오. 2014년 김OO"이라고 적혀 있어요. 그런데 여기에 버그가 있어요.',
+    text: '주석에 "{warning}. {year}년 {author}"(이)라고 적혀 있어요. 그런데 여기에 버그가 있어요.',
     weight: 6,
+    severity: true,
+    vars: {
+      warning: ['이 코드는 건드리지 마시오', '수정 금지. 이유는 묻지 마시오', '여기를 고치면 정산이 틀어짐', '건드리면 책임 못 짐'],
+      year: { min: 2009, max: 2019 },
+      author: ['김OO', '박OO', '퇴사한 CTO', '전설의 최 과장'],
+      nights: { bySeverity: [['하룻밤을'], ['이틀 밤을', '3일 밤을'], ['일주일 내내 밤을']] },
+    },
     choices: [
       {
         label: '용기를 내서 고친다',
         outcomes: [
-          { chance: 0.5, text: '고쳤어요! 김OO 님이 왜 그렇게 적었는지는 끝내 몰라요.', tone: 'lucky', effects: { gradeBonus: 10, stats: { coding: 2 }, counters: { refactors: 1 } } },
-          { chance: 0.5, text: '왜 건드리지 말라고 했는지 알게 됐어요. 3일 밤을 샜어요.', tone: 'unlucky', effects: { stamina: -20, stats: { coding: 3, domain: 3 }, counters: { incidents: 1 } } },
+          { chance: 0.5, text: '고쳤어요! {author} 님이 왜 그렇게 적었는지는 끝내 몰라요.', tone: 'lucky', effects: { gradeBonus: 10, stats: { coding: 2 }, counters: { refactors: 1 } } },
+          { chance: 0.5, text: '왜 건드리지 말라고 했는지 알게 됐어요. {nights} 샜어요.', tone: 'unlucky', effects: { stamina: -20, stats: { coding: 3, domain: 3 }, counters: { incidents: 1 } } },
         ],
       },
       {
@@ -153,24 +221,37 @@ export const events: GameEvent[] = [
     id: 'predecessor_quit',
     category: '레거시',
     emoji: '📦',
-    title: '전임자 퇴사, 인수인계 이틀',
-    text: '시스템 세 개를 맡던 선배가 퇴사해요. 인수인계 문서는 노션 페이지 한 장이에요.',
+    title: '전임자 퇴사, 인수인계 {days}일',
+    text: '{systems}(을)를 맡던 {who}(이)가 퇴사해요. 인수인계 문서라고 받은 건 {doc}뿐이에요.',
     weight: 7,
+    severity: true,
+    vars: {
+      days: { min: 1, max: 3 },
+      who: ['선배', '사수', '옆자리 과장님', '팀의 유일한 시니어'],
+      systems: {
+        bySeverity: [
+          ['배치 하나', '관리자 화면 하나'],
+          ['시스템 세 개', '서비스 두 개와 배치 전부'],
+          ['결제 시스템 전체', '아무도 모르는 시스템 다섯 개'],
+        ],
+      },
+      doc: ['노션 페이지 한 장', '5년 전 위키 링크 하나', '"코드 보면 알아요" 한 줄', '제목만 있는 빈 문서'],
+    },
     conditions: { minCareerYear: 2 },
     choices: [
       {
-        label: '이틀 동안 질문 폭격을 한다',
+        label: '남은 {days}일 동안 질문 폭격을 한다',
         check: { communication: 35 },
         outcomes: [
-          { chance: 0.8, text: '선배가 퇴사 전날까지 시달렸지만 덕분에 살았어요.', tone: 'skill', effects: { stamina: -8, stats: { domain: 5 } } },
-          { chance: 0.2, text: "질문할 때마다 선배가 '그건 나도 몰라'만 반복했어요.", tone: 'unlucky', effects: { stamina: -8, stats: { domain: 2 } } },
+          { chance: 0.8, text: '{who}(이)가 퇴사 전날까지 시달렸지만 덕분에 살았어요.', tone: 'skill', effects: { stamina: -8, stats: { domain: 5 } } },
+          { chance: 0.2, text: "질문할 때마다 {who}(이)가 '그건 나도 몰라'만 반복했어요.", tone: 'unlucky', effects: { stamina: -8, stats: { domain: 2 } } },
         ],
       },
       {
         label: '코드 보면 알겠지 하고 보낸다',
         outcomes: [
           { chance: 0.3, text: '코드가 생각보다 읽기 쉬웠어요.', tone: 'lucky', effects: { stats: { domain: 3 } } },
-          { chance: 0.7, text: '첫 장애 때 선배에게 카톡했는데 읽씹당했어요.', tone: 'unlucky', effects: { stamina: -15, stats: { domain: 4 }, counters: { incidents: 1 } } },
+          { chance: 0.7, text: '첫 장애 때 {who}에게 카톡했는데 읽씹당했어요.', tone: 'unlucky', effects: { stamina: -15, stats: { domain: 4 }, counters: { incidents: 1 } } },
         ],
       },
     ],
@@ -250,9 +331,31 @@ export const events: GameEvent[] = [
     id: 'spec_change_d3',
     category: '일정',
     emoji: '📅',
-    title: '오픈 D-3, 기획 변경',
-    text: '기획자가 "아주 작은 변경"이라며 화면 흐름 전체를 바꿔 왔어요. 오픈일은 그대로예요.',
+    title: '오픈 D-{days}, 기획 변경',
+    text: '기획자가 "아주 작은 변경"이라며 {change}(을)를 바꿔 왔어요. 오픈일은 그대로예요.',
     weight: 9,
+    severity: true,
+    vars: {
+      days: { min: 2, max: 5 },
+      change: {
+        bySeverity: [
+          ['버튼 위치', '문구 몇 개', '메인 색상'],
+          ['화면 흐름 전체', '회원가입 단계', '검색 결과 화면'],
+          ['결제 방식', '서비스 컨셉', '타깃 고객'],
+        ],
+      },
+    },
+    variants: [
+      {
+        title: '오픈 D-{days}, 대표님의 한마디',
+        text: '대표님이 시연을 보더니 "{change}만 좀 바꾸자"고 했어요. 오픈일은 그대로예요.',
+      },
+      {
+        title: '오픈 D-{days}, 고객사 요청',
+        text: '고객사 담당자가 "{change}만 수정해 주세요"라고 메일을 보냈어요. 계약서의 오픈일은 그대로예요.',
+        conditions: { industries: ['si_sm', 'public'] },
+      },
+    ],
     choices: [
       {
         label: '밤새서 맞춘다',
@@ -275,23 +378,36 @@ export const events: GameEvent[] = [
     id: 'simple_by_tomorrow',
     category: '일정',
     emoji: '⏰',
-    title: '"간단한 거니까 내일까지"',
-    text: '팀장이 엑셀 다운로드 기능을 내일까지 해 달래요. 열어 보니 권한·필터·대용량 처리가 다 필요해요.',
+    title: '"간단한 거니까 {when}"',
+    text: '{who}(이)가 {feature} 기능을 {when} 해 달래요. 열어 보니 {needs}(이)가 다 필요해요.',
     weight: 8,
+    severity: true,
+    vars: {
+      who: ['팀장', '기획자', '옆 팀 팀장', '대표님'],
+      when: ['내일까지', '오늘 퇴근 전까지', '이번 주 안에'],
+      feature: {
+        bySeverity: [
+          ['엑셀 다운로드', '정렬 옵션', '관리자 메모 칸'],
+          ['통계 대시보드', '알림 발송', '권한 관리 화면'],
+          ['정산 시스템', '추천 알고리즘', '다국어 지원'],
+        ],
+      },
+      needs: ['권한·필터·대용량 처리', '예외 처리·로그·테스트', '외부 연동·보안 검토·데이터 이전'],
+    },
     choices: [
       {
         label: '일단 된다고 한다',
         outcomes: [
           { chance: 0.5, text: '대충 만들어서 넘겼어요. 3개월 뒤 대용량에서 터졌어요.', tone: 'unlucky', effects: { stamina: -10, counters: { incidents: 1 } } },
-          { chance: 0.5, text: '어떻게든 해냈어요. 팀장은 역시 간단했다고 생각해요.', effects: { stamina: -15, stats: { coding: 2 } } },
+          { chance: 0.5, text: '어떻게든 해냈어요. {who}(은)는 역시 간단했다고 생각해요.', effects: { stamina: -15, stats: { coding: 2 } } },
         ],
       },
       {
         label: '작업 범위를 쪼개서 일정을 다시 잡는다',
         check: { design: 45 },
         outcomes: [
-          { chance: 0.7, text: '팀장이 "이게 이렇게 큰 거였어?"라며 일주일을 줬어요.', tone: 'skill', effects: { stats: { design: 2, communication: 2 } } },
-          { chance: 0.3, text: '팀장이 "그래서 내일까지 되냐고"라고 다시 물었어요. 밤을 샜어요.', tone: 'unlucky', effects: { stamina: -15, stats: { design: 1 } } },
+          { chance: 0.7, text: '{who}(이)가 "이게 이렇게 큰 거였어?"라며 일주일을 줬어요.', tone: 'skill', effects: { stats: { design: 2, communication: 2 } } },
+          { chance: 0.3, text: '{who}(이)가 "그래서 {when} 되냐고"라고 다시 물었어요. 밤을 샜어요.', tone: 'unlucky', effects: { stamina: -15, stats: { design: 1 } } },
         ],
       },
     ],
@@ -342,16 +458,25 @@ export const events: GameEvent[] = [
     id: 'kkondae_pm',
     category: '사람',
     emoji: '🙄',
-    title: '"개발자는 코딩만 하면 되잖아요"',
-    text: 'PM이 회의에서 기술 검토 없이 일정을 확정하고, 질문하자 이렇게 말했어요.',
+    title: '"{quote}"',
+    text: '{who}(이)가 회의에서 기술 검토 없이 일정을 확정하고, 질문하자 이렇게 말했어요.',
     weight: 7,
+    vars: {
+      who: ['PM', '기획 팀장', '사업부 이사', '영업 담당'],
+      quote: [
+        '개발자는 코딩만 하면 되잖아요',
+        '그건 개발에서 알아서 해야죠',
+        '기술적인 건 모르겠고 날짜만 맞춰 주세요',
+        '다른 회사는 이틀이면 한다던데요',
+      ],
+    },
     choices: [
       {
         label: '데이터로 반박한다',
         check: { communication: 45, domain: 40 },
         outcomes: [
-          { chance: 0.7, text: '지난 프로젝트 지연 통계를 보여줬더니 PM이 조용해졌어요.', tone: 'skill', effects: { stats: { communication: 3 }, gradeBonus: 5 } },
-          { chance: 0.3, text: '맞는 말이었지만 PM 상사가 PM 편을 들었어요.', tone: 'unlucky', effects: { gradeBonus: -5 } },
+          { chance: 0.7, text: '지난 프로젝트 지연 통계를 보여줬더니 {who}(이)가 조용해졌어요.', tone: 'skill', effects: { stats: { communication: 3 }, gradeBonus: 5 } },
+          { chance: 0.3, text: '맞는 말이었지만 임원이 {who} 편을 들었어요.', tone: 'unlucky', effects: { gradeBonus: -5 } },
         ],
       },
       {
@@ -417,12 +542,22 @@ export const events: GameEvent[] = [
     category: '커리어',
     emoji: '📞',
     title: '헤드헌터의 연락',
-    text: '링크드아웃으로 헤드헌터가 연락했어요. "연봉 30% 인상 가능한 포지션이 있어요."',
+    text: '{channel}(으)로 헤드헌터가 연락했어요. "연봉 {raise}% 인상 가능한 포지션이 있어요."',
     weight: 6,
+    vars: {
+      channel: ['링크드아웃', '메일', '문자', '전화'],
+      raise: { min: 20, max: 40 },
+    },
+    variants: [
+      {
+        title: '전 동료의 스카우트',
+        text: '이직한 전 동료가 {channel}(으)로 연락했어요. "우리 회사 올래? 연봉 {raise}%는 더 줄 거야."',
+      },
+    ],
     conditions: { minCareerYear: 3 },
     choices: [
       {
-        label: '제안서를 들고 연봉 협상을 한다',
+        label: '이 제안을 들고 연봉 협상을 한다',
         check: { communication: 50 },
         outcomes: [
           { chance: 0.6, text: '회사가 카운터 오퍼로 연봉을 올려 줬어요.', tone: 'skill', effects: { salaryPct: 0.1 } },
@@ -432,7 +567,7 @@ export const events: GameEvent[] = [
       {
         label: '정중히 거절한다',
         outcomes: [
-          { chance: 1, text: '헤드헌터가 "다음에 또 연락드릴게요"라고 했어요.', effects: { stats: { reputation: 1 } } },
+          { chance: 1, text: '"다음에 또 연락할게요"라는 답이 왔어요.', effects: { stats: { reputation: 1 } } },
         ],
       },
     ],
@@ -566,8 +701,24 @@ export const events: GameEvent[] = [
     category: '업계',
     emoji: '🤖',
     title: 'AI가 내 업무를 대신해요',
-    text: '회사가 AI 코딩 에이전트를 도입했어요. 내가 하던 CRUD 작업을 AI가 10분 만에 끝내요.',
+    text: '회사가 {tool}(을)를 도입했어요. 내가 하던 {task}(을)를 AI가 {minutes}분 만에 끝내요.',
     weight: 8,
+    vars: {
+      tool: ['AI 코딩 에이전트', 'AI 페어 프로그래머', '사내 AI 개발 봇'],
+      task: ['CRUD 작업', '테스트 코드 작성', 'API 문서 정리', '버그 수정'],
+      minutes: { min: 5, max: 30 },
+    },
+    variants: [
+      {
+        title: '후배가 AI로 나보다 빨라요',
+        text: '입사 1년 차 후배가 {tool}(으)로 내가 일주일 걸리던 {task}(을)를 {minutes}분 만에 끝냈어요.',
+        conditions: { minCareerYear: 5 },
+      },
+      {
+        title: 'AI 도입 후 팀 정원 조정',
+        text: '{tool} 도입 뒤 팀 정원을 줄인다는 얘기가 돌아요. 내가 하던 {task}(은)는 이제 AI가 {minutes}분이면 해요.',
+      },
+    ],
     conditions: { minCalendarYear: 2028 },
     choices: [
       {

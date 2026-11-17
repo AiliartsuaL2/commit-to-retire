@@ -1,5 +1,6 @@
 export * from './types'
 export { createRng } from './rng'
+export type { ResolvedEvent } from './events'
 export { createGame, firstJobOptions, startingStats } from './setup'
 export { startYear, currentEvent, remainingEvents, chooseEventOption, finishYear, acknowledgeYear, staminaChange } from './year'
 export { acceptOffer, declineOffers, chooseTrack, canChooseTrack, nextYear, retireNow } from './hub'

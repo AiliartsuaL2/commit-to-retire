@@ -2,6 +2,13 @@ import { currentEvent, remainingEvents, type GameState } from '../engine'
 import { useGame } from '../store/game'
 import { Badge, Button, Choice, EffectChips, Screen, StatusHeader } from '../ui'
 
+/** 심각도는 보여준다 (확률은 숨기되, 일이 얼마나 큰지는 알고 고르게) */
+const SEVERITY_LABEL = {
+  1: { text: '가벼운 일', tone: 'green' },
+  2: { text: '보통 일', tone: 'gray' },
+  3: { text: '큰일', tone: 'red' },
+} as const
+
 const TONE_LABEL = {
   lucky: { text: '운이 좋았어요', tone: 'green' },
   unlucky: { text: '운이 나빴어요', tone: 'red' },
@@ -51,6 +58,7 @@ export function EventScreen({ game }: { game: GameState }) {
       <div className="flex flex-col gap-3 py-2">
         <div className="flex items-center gap-2">
           <Badge>{event.category}</Badge>
+          {event.rolledSeverity && <Badge tone={SEVERITY_LABEL[event.rolledSeverity].tone}>{SEVERITY_LABEL[event.rolledSeverity].text}</Badge>}
           <span className="text-xs text-gray-400">올해 남은 일 {remainingEvents(game)}개</span>
         </div>
         <p className="text-5xl">{event.emoji}</p>

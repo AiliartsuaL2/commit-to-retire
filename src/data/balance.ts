@@ -86,6 +86,13 @@ export const EXIT_MIN_YEARS = 2
 /** 한 번 나온 이벤트는 이 햇수 동안 다시 나오지 않는다 (후보가 바닥나면 가장 오래된 것부터 다시 나온다) */
 export const EVENT_COOLDOWN_YEARS = 3
 
+/** 심각도 1(가벼움)·2(보통)·3(큰일)이 뽑히는 가중치 */
+export const SEVERITY_WEIGHTS = [35, 45, 20]
+/** 심각도별로 결과의 체력·고과·능력치 변화에 곱하는 값. 가중 평균이 1에 가깝게 둔다 */
+export const SEVERITY_EFFECT_MULTIPLIER = [0.6, 1, 1.5]
+/** 심각도별로 실패(unlucky) 결과 확률에 곱하는 값 */
+export const SEVERITY_FAIL_MULTIPLIER = [0.8, 1, 1.3]
+
 // ─── 엔딩 ──────────────────────────────────────────────
 
 /** 명성 점수 = 최고 직책 점수 + 평판 × 이 값 + 업적 점수 */

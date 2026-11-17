@@ -32,12 +32,14 @@ import {
   RETIRE_AGE,
   SALARY_CAP,
   SAVINGS_RATE,
+  SEVERITY_FAIL_MULTIPLIER,
   SPECIALTY_FIT_MULTIPLIER,
   specialtyById,
   STAMINA_RECOVERY,
   UPPER_SEAT_MULTIPLIER,
 } from '../data'
 import { checkAchievements, evaluateRetirement } from './ending'
+import { eventById, matchesConditions, pendingId, resolveEvent, rollInstance, toInstance, type ResolvedEvent } from './events'
 import { generateFeed } from './feed'
 import { applicationLimit, generatePostings, rollHeadhunterOffer } from './jobs'
 import { createRng, type Rng } from './rng'
@@ -62,8 +64,6 @@ import type {
   Stats,
 } from './types'
 
-const eventById = Object.fromEntries(events.map((e) => [e.id, e])) as Record<string, GameEvent>
-
 // ─── 연초 ──────────────────────────────────────────────
 
 export function startYear(state: GameState, focus: FocusId): GameState {
@@ -81,9 +81,9 @@ export function startYear(state: GameState, focus: FocusId): GameState {
   const pool = events.filter((e) => isEligible(e, s))
   s.eventLastSeen ??= {}
   for (let i = 0; i < count; i++) {
-    const picked = pickEvent(pool.filter((e) => !s.pendingEvents.includes(e.id)), s, rng)
+    const picked = pickEvent(pool.filter((e) => !s.pendingEvents.some((p) => pendingId(p) === e.id)), s, rng)
     if (!picked) continue
-    s.pendingEvents.push(picked.id)
+    s.pendingEvents.push(rollInstance(picked, s, rng))
     s.eventLastSeen[picked.id] = s.calendarYear
   }
 
@@ -110,36 +110,29 @@ function pickEvent(candidates: GameEvent[], s: GameState, rng: Rng): GameEvent |
 
 export function isEligible(event: GameEvent, s: GameState): boolean {
   if (event.once && s.seenEvents.includes(event.id)) return false
-  const c = event.conditions
-  if (!c) return true
-  if (c.minCareerYear !== undefined && s.careerYear < c.minCareerYear) return false
-  if (c.maxCareerYear !== undefined && s.careerYear > c.maxCareerYear) return false
-  if (c.minAge !== undefined && s.age < c.minAge) return false
-  if (c.maxAge !== undefined && s.age > c.maxAge) return false
-  if (c.minCalendarYear !== undefined && s.calendarYear < c.minCalendarYear) return false
-  if (c.maxYearsAtCompany !== undefined && s.yearsAtCompany > c.maxYearsAtCompany) return false
-  if (c.minJobChanges !== undefined && s.counters.jobChanges < c.minJobChanges) return false
-  if (c.maxJobChanges !== undefined && s.counters.jobChanges > c.maxJobChanges) return false
-  if (c.companyTypes && !c.companyTypes.includes(s.company.type)) return false
-  if (c.industries && !c.industries.includes(s.company.industry)) return false
-  if (c.ranks && !c.ranks.includes(s.rank)) return false
-  if (c.specialties && !c.specialties.includes(s.profile.specialty)) return false
-  if (c.flags && !c.flags.every((f) => s.flags.includes(f))) return false
-  if (c.notFlags && c.notFlags.some((f) => s.flags.includes(f))) return false
-  return true
+  return matchesConditions(event.conditions, s)
 }
 
 // ─── 이벤트 ────────────────────────────────────────────
 
-/** 지금 보여줄 이벤트. 데이터에서 사라진 이벤트(예전 세이브 등)는 건너뛴다 */
-export function currentEvent(state: GameState): GameEvent | null {
-  const id = state.pendingEvents.find((e) => eventById[e])
-  return id ? eventById[id] : null
+/** 지금 처리할 항목. 데이터에서 사라진 이벤트(예전 세이브 등)는 건너뛴다 */
+function currentPending(state: GameState) {
+  for (const p of state.pendingEvents) {
+    const instance = toInstance(p)
+    if (instance) return { pending: p, instance }
+  }
+  return null
+}
+
+/** 지금 보여줄 이벤트. 문구의 변수가 채워지고 효과에 심각도가 반영된 상태로 돌려준다 */
+export function currentEvent(state: GameState): ResolvedEvent | null {
+  const current = currentPending(state)
+  return current ? resolveEvent(current.instance, state) : null
 }
 
 /** 올해 남은 이벤트 수 (사라진 이벤트는 셈하지 않는다) */
 export function remainingEvents(state: GameState): number {
-  return state.pendingEvents.filter((e) => eventById[e]).length
+  return state.pendingEvents.filter((p) => eventById[pendingId(p)]).length
 }
 
 function hasPendingEvents(state: GameState): boolean {
@@ -150,19 +143,28 @@ export function chooseEventOption(
   state: GameState,
   choiceIndex: number,
 ): { state: GameState; outcome: EventOutcome } {
-  const event = currentEvent(state)
-  if (state.phase !== 'event' || !event) throw new Error('진행 중인 이벤트가 없어요')
+  const current = currentPending(state)
+  if (state.phase !== 'event' || !current) throw new Error('진행 중인 이벤트가 없어요')
+  const event = resolveEvent(current.instance, state)
   const choice = event.choices[choiceIndex]
   if (!choice) throw new Error(`없는 선택지예요: ${choiceIndex}`)
   const s = structuredClone(state)
   const rng = createRng(s.rngState)
-  const failMultiplier = checkFailMultiplier(s.stats, choice.check)
+  // 능력치가 모자라거나 일이 클수록 실패 결과가 잘 나온다
+  const severity = event.rolledSeverity
+  const failMultiplier = checkFailMultiplier(s.stats, choice.check) * (severity ? SEVERITY_FAIL_MULTIPLIER[severity - 1] : 1)
   const outcome = rng.weighted(choice.outcomes, (o) => (o.tone === 'unlucky' ? o.chance * failMultiplier : o.chance))!
 
   applyEffects(s, outcome.effects)
-  s.pendingEvents = s.pendingEvents.slice(s.pendingEvents.indexOf(event.id) + 1)
+  s.pendingEvents = s.pendingEvents.slice(state.pendingEvents.indexOf(current.pending) + 1)
   s.seenEvents.push(event.id)
-  s.yearEvents.push({ eventId: event.id, choiceIndex, outcomeText: outcome.text })
+  s.yearEvents.push({
+    eventId: event.id,
+    choiceIndex,
+    outcomeText: outcome.text,
+    title: `${event.emoji} ${event.title}`,
+    ...(severity ? { severity } : {}),
+  })
   s.rngState = rng.state
   return { state: s, outcome }
 }
