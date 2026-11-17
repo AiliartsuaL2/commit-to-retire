@@ -21,7 +21,7 @@ Vite · React · TypeScript · Zustand · Tailwind CSS · Vitest
 ```
 src/
   engine/   게임 규칙 (순수 TS 함수, UI 의존 없음)
-  data/     회사·이벤트·반응 템플릿 (JSON)
+  data/     회사·이벤트·반응 콘텐츠 (타입 붙은 TS 배열)
   store/    Zustand 상태 + localStorage 저장
   screens/  화면 컴포넌트
 docs/       기획 문서

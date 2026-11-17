@@ -1,0 +1,115 @@
+import type { AchievementDef, FameGrade, FocusDef, Grade, RankDef } from '../engine/types'
+
+export const ranks: RankDef[] = [
+  { id: 'newbie', label: '신입', track: 'common', minYears: 0, minStats: {}, from: null, salaryBump: 0, fameScore: 0 },
+  { id: 'junior', label: '주니어', track: 'common', minYears: 1, minStats: { coding: 40 }, from: 'newbie', salaryBump: 0.05, fameScore: 5 },
+  { id: 'mid', label: '미들', track: 'common', minYears: 4, minStats: { coding: 55 }, from: 'junior', salaryBump: 0.06, fameScore: 10 },
+  { id: 'senior', label: '시니어', track: 'common', minYears: 7, minStats: { coding: 65, design: 55 }, from: 'mid', salaryBump: 0.08, fameScore: 20 },
+  { id: 'lead', label: '테크리드', track: 'common', minYears: 10, minStats: { design: 65, communication: 55 }, from: 'senior', salaryBump: 0.1, fameScore: 30 },
+
+  // 매니저 트랙
+  { id: 'em', label: '엔지니어링 매니저', track: 'manager', minYears: 12, minStats: { communication: 70 }, from: 'lead', salaryBump: 0.1, fameScore: 40 },
+  { id: 'director', label: '디렉터', track: 'manager', minYears: 15, minStats: { communication: 80, domain: 70 }, from: 'em', salaryBump: 0.12, fameScore: 55 },
+  { id: 'vp', label: 'VP of Engineering', track: 'manager', minYears: 18, minStats: { communication: 85, domain: 80, reputation: 60 }, from: 'director', salaryBump: 0.15, fameScore: 70 },
+  { id: 'cto', label: 'CTO', track: 'manager', minYears: 20, minStats: { design: 85, communication: 90, reputation: 75 }, from: 'vp', salaryBump: 0.2, fameScore: 85 },
+
+  // IC 트랙
+  { id: 'staff', label: '스태프 엔지니어', track: 'ic', minYears: 12, minStats: { design: 75, coding: 75 }, from: 'lead', salaryBump: 0.1, fameScore: 40 },
+  { id: 'principal', label: '프린시펄 엔지니어', track: 'ic', minYears: 15, minStats: { design: 85, coding: 80, reputation: 55 }, from: 'staff', salaryBump: 0.12, fameScore: 55 },
+  { id: 'fellow', label: '펠로우', track: 'ic', minYears: 20, minStats: { design: 92, coding: 85, reputation: 80 }, from: 'principal', salaryBump: 0.2, fameScore: 75 },
+]
+
+export const focuses: FocusDef[] = [
+  {
+    id: 'all_in',
+    label: '업무에 올인',
+    emoji: '🔥',
+    description: '고과는 오르지만 몸이 상해요.',
+    statGain: { domain: 3, coding: 1 },
+    stamina: -20,
+    gradeBonus: 15,
+    offerBonus: 0,
+  },
+  {
+    id: 'study',
+    label: '기술 공부',
+    emoji: '📖',
+    description: '퇴근 후 공부. 실력이 단단해져요.',
+    statGain: { coding: 3, design: 3 },
+    stamina: -8,
+    gradeBonus: 0,
+    offerBonus: 0,
+  },
+  {
+    id: 'side_project',
+    label: '사이드 프로젝트',
+    emoji: '🛠️',
+    description: '이름을 알리고 창업의 씨앗을 심어요.',
+    statGain: { coding: 2, reputation: 3 },
+    stamina: -12,
+    gradeBonus: -5,
+    offerBonus: 1,
+    setFlags: ['sideProject'],
+  },
+  {
+    id: 'networking',
+    label: '네트워킹·발표',
+    emoji: '🎤',
+    description: '밋업과 컨퍼런스에서 얼굴을 알려요.',
+    statGain: { communication: 3, reputation: 3 },
+    stamina: -5,
+    gradeBonus: 0,
+    offerBonus: 1,
+  },
+  {
+    id: 'job_hunt',
+    label: '이직 준비',
+    emoji: '💼',
+    description: '연말에 이직 제안이 몰려와요.',
+    statGain: { coding: 1 },
+    stamina: -5,
+    gradeBonus: -10,
+    offerBonus: 3,
+  },
+  {
+    id: 'rest',
+    label: '쉬어가기',
+    emoji: '🌴',
+    description: '칼퇴하고 체력을 회복해요.',
+    statGain: {},
+    stamina: 30,
+    gradeBonus: -5,
+    offerBonus: 0,
+  },
+]
+
+/** 고과 점수 → 등급 기준 (점수 이상이면 해당 등급) */
+export const gradeThresholds: { grade: Grade; minScore: number; raise: number }[] = [
+  { grade: 'S', minScore: 85, raise: 0.12 },
+  { grade: 'A', minScore: 70, raise: 0.08 },
+  { grade: 'B', minScore: 45, raise: 0.04 },
+  { grade: 'C', minScore: 25, raise: 0.01 },
+  { grade: 'D', minScore: -Infinity, raise: 0 },
+]
+
+/** 명성 점수 → 엔딩 등급 */
+export const fameGrades: { grade: FameGrade; minScore: number; title: string }[] = [
+  { grade: 'S', minScore: 150, title: '한국 IT의 전설' },
+  { grade: 'A', minScore: 110, title: '업계가 아는 이름' },
+  { grade: 'B', minScore: 70, title: '믿고 맡기는 시니어' },
+  { grade: 'C', minScore: 35, title: '무난한 월급쟁이' },
+  { grade: 'D', minScore: -Infinity, title: '치킨집 사장님' },
+]
+
+export const achievements: AchievementDef[] = [
+  { id: 'weekend_rollback', title: '주말 롤백', emoji: '🔙', description: '금요일 배포로 주말을 반납했어요.', fame: 3 },
+  { id: 'legacy_archaeologist', title: '레거시 고고학자', emoji: '🦴', description: '10년 넘은 코드를 세 번 리팩토링했어요.', fame: 8 },
+  { id: 'job_hopper', title: '이직의 신', emoji: '🦘', description: '다섯 번 이상 이직했어요.', fame: 5 },
+  { id: 'one_company', title: '한 우물', emoji: '🪣', description: '한 회사에서 20년을 버텼어요.', fame: 10 },
+  { id: 'stock_lottery', title: '스톡옵션 로또', emoji: '💰', description: '회사가 엑싯에 성공했어요.', fame: 12 },
+  { id: 'stock_tissue', title: '스톡옵션 휴지', emoji: '🧻', description: '다니던 회사가 세 번 망했어요.', fame: 5 },
+  { id: 'three_am', title: '새벽 3시의 수호자', emoji: '🌙', description: '장애 대응을 열 번 했어요.', fame: 8 },
+  { id: 'non_major_cto', title: '비전공 CTO', emoji: '👑', description: '비전공으로 시작해 CTO가 됐어요.', fame: 20 },
+  { id: 'open_source_star', title: '오픈소스 스타', emoji: '⭐', description: '평판 90을 넘겼어요.', fame: 15 },
+  { id: 'no_burnout', title: '무사고 퇴직', emoji: '🕊️', description: '번아웃 없이 60세까지 일했어요.', fame: 10 },
+]
