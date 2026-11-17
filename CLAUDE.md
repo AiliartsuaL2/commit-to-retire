@@ -15,11 +15,16 @@
 - `npm test` 엔진 테스트 (Vitest)
 - `npm run build` 타입 체크 + 빌드
 - `npm run deploy` 빌드 후 Cloudflare에 배포 (https://commit-to-retire.commit-to-retire.workers.dev)
-- `npm run balance` 봇 1,800판 자동 플레이 → 직책·엔딩·연봉 분포 리포트. 수치를 바꾸면 돌려서 확인한다
+- `npm run balance` 봇 자동 플레이 리포트 + **필승법 검사** (고정 전략 하나라도 S 20% 초과면 실패). 약 2분. 수치를 바꾸면 반드시 돌린다
 
 ## 엔진 흐름
-`createGame` → (`startYear` → `chooseEventOption`* → `finishYear` → `acknowledgeYear` → 허브: `acceptOffer`/`declineOffers`/`chooseTrack`/`nextYear`/`retireNow`) 반복 → `retired`.
-모든 함수는 상태를 복사해 새 상태를 돌려준다. 밸런스 규칙은 `src/engine/year.ts`·`rules.ts`, 수치는 `src/data/`.
+`createGame` → (`startYear` → `chooseEventOption`* → `finishYear` → `acknowledgeYear` → 허브: `applyToPosting`/`acceptOffer`/`declineOffers`/`chooseTrack`/`spendGapYear`/`nextYear`/`retireNow`) 반복 → `retired`.
+모든 함수는 상태를 복사해 새 상태를 돌려준다. 밸런스 규칙은 `src/engine/year.ts`·`rules.ts`·`jobs.ts`, **밸런스 수치는 `src/data/balance.ts`**, 나머지 데이터는 `src/data/`.
+
+## 문구
+- 이벤트·반응 문구에 `{변수}`(이벤트의 `vars`, 피드의 `{name}` `{company}` 등)를 쓸 수 있다.
+- 변수 뒤 조사는 `(이)가` `(은)는` `(을)를` `(와)과` `(으)로`로 쓰면 받침에 맞게 바뀐다 (`src/engine/text.ts`).
+- 반응 문구(피드)는 게임 속 게시글이라 커뮤니티 말투(반말·음슴체), 화면 문구는 해요체.
 
 ## 화면
 - 모바일 우선: `ui/`의 `Screen`(최대 폭 28rem, 하단 고정 버튼) 안에 만든다. 375px 폭에서 가로 스크롤이 생기면 안 된다.
