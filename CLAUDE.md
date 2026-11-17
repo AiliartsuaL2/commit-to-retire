@@ -14,6 +14,7 @@
 - `npm run dev` 개발 서버
 - `npm test` 엔진 테스트 (Vitest)
 - `npm run build` 타입 체크 + 빌드
+- `npm run deploy` 빌드 후 Cloudflare에 배포 (https://commit-to-retire.commit-to-retire.workers.dev)
 - `npm run balance` 봇 1,800판 자동 플레이 → 직책·엔딩·연봉 분포 리포트. 수치를 바꾸면 돌려서 확인한다
 
 ## 엔진 흐름

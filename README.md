@@ -3,6 +3,7 @@
 신입 첫 출근부터 은퇴까지, 한국 개발자의 커리어를 1년 단위로 살아보는 풍자 육성 게임.
 서버 없이 브라우저에서 동작합니다.
 
+- 플레이: https://commit-to-retire.commit-to-retire.workers.dev
 - 기획서: [docs/기획서.md](docs/기획서.md)
 
 ## 실행
@@ -26,4 +27,12 @@ src/
   screens/  화면 (phase별 한 화면)
   ui/       공통 UI 조각 (모바일 레이아웃, 버튼, 능력치 바)
 docs/       기획 문서
+```
+
+## 배포
+
+Cloudflare Workers 정적 자산으로 배포합니다 (`wrangler.jsonc`).
+
+```bash
+npm run deploy
 ```
