@@ -409,6 +409,8 @@ export interface GameState {
   achievements: string[]
   /** once 이벤트 재등장 방지 */
   seenEvents: string[]
+  /** 이벤트 id → 마지막으로 나온 달력 연도 (반복 방지용). 예전 세이브에는 없을 수 있다 */
+  eventLastSeen?: Record<string, number>
 
   history: YearRecord[]
   retirement: Retirement | null

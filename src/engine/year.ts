@@ -10,6 +10,7 @@ import {
   companyTypeById,
   DIMINISHING,
   educationById,
+  EVENT_COOLDOWN_YEARS,
   events,
   EXIT_CHANCE,
   EXIT_LUCK,
@@ -78,14 +79,33 @@ export function startYear(state: GameState, focus: FocusId): GameState {
 
   const count = rng.chance(0.5) ? 2 : 1
   const pool = events.filter((e) => isEligible(e, s))
+  s.eventLastSeen ??= {}
   for (let i = 0; i < count; i++) {
-    const picked = rng.weighted(pool.filter((e) => !s.pendingEvents.includes(e.id)), (e) => e.weight)
-    if (picked) s.pendingEvents.push(picked.id)
+    const picked = pickEvent(pool.filter((e) => !s.pendingEvents.includes(e.id)), s, rng)
+    if (!picked) continue
+    s.pendingEvents.push(picked.id)
+    s.eventLastSeen[picked.id] = s.calendarYear
   }
 
   s.phase = 'event'
   s.rngState = rng.state
   return s
+}
+
+/**
+ * 후보 중 하나를 가중치로 뽑는다.
+ * - 최근 EVENT_COOLDOWN_YEARS년 안에 본 이벤트는 뺀다
+ * - 이미 여러 번 본 이벤트일수록 덜 나온다 (가중치 ÷ (1 + 본 횟수))
+ * - 후보가 전부 최근에 본 것이면 그중 가장 오래전에 본 이벤트들에서 고른다
+ */
+function pickEvent(candidates: GameEvent[], s: GameState, rng: Rng): GameEvent | undefined {
+  const seen = s.eventLastSeen ?? {}
+  const times = (e: GameEvent) => s.seenEvents.filter((id) => id === e.id).length
+  const weight = (e: GameEvent) => e.weight / (1 + times(e))
+  const fresh = candidates.filter((e) => seen[e.id] === undefined || s.calendarYear - seen[e.id] > EVENT_COOLDOWN_YEARS)
+  if (fresh.length > 0) return rng.weighted(fresh, weight)
+  const oldest = Math.min(...candidates.map((e) => seen[e.id]))
+  return rng.weighted(candidates.filter((e) => seen[e.id] === oldest), weight)
 }
 
 export function isEligible(event: GameEvent, s: GameState): boolean {
