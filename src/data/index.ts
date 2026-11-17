@@ -2,6 +2,7 @@ import { achievements, focuses, ranks } from './career'
 import { companyTypes, industries } from './companies'
 import { educations, playStyles, specialties } from './profile'
 
+export * from './balance'
 export * from './career'
 export * from './companies'
 export * from './events'

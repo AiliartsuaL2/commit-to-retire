@@ -1,6 +1,6 @@
 // 여러 단계에서 공통으로 쓰는 계산 규칙. 밸런스 조정은 주로 이 파일과 src/data/에서 한다.
 
-import { companyTypeById, educationById, industryById, rankById } from '../data'
+import { companyTypeById, educationById, industryById, rankById, ranks } from '../data'
 import type { Rng } from './rng'
 import type {
   CompanyTypeId,
@@ -8,6 +8,7 @@ import type {
   GameState,
   IndustryId,
   Profile,
+  RankDef,
   RankId,
   StatKey,
   Stats,
@@ -50,6 +51,24 @@ export function unlock(state: GameState, achievementId: string): void {
 
 export function meetsStats(stats: Stats, required: Partial<Stats> | undefined): boolean {
   return Object.entries(required ?? {}).every(([key, min]) => stats[key as StatKey] >= (min ?? 0))
+}
+
+export interface PromotionTarget {
+  rank: RankDef
+  /** 지금 회사의 승진 속도를 반영한 최소 경력 연차 */
+  minCareerYear: number
+}
+
+/**
+ * 다음 승진 대상과 조건. 맨 위 직급이거나, 리드인데 트랙을 아직 고르지 않았으면 null.
+ * assumeTrack을 주면 트랙을 고르기 전에도 그 트랙의 다음 직급을 미리 볼 수 있다.
+ */
+export function nextPromotion(s: GameState, assumeTrack?: 'manager' | 'ic'): PromotionTarget | null {
+  const track = s.preferredTrack ?? assumeTrack ?? null
+  const rank = ranks.find((r) => r.from === s.rank && (r.track === 'common' || r.track === track))
+  if (!rank) return null
+  const speed = companyTypeById[s.company.type].promotionSpeed
+  return { rank, minCareerYear: Math.ceil(rank.minYears / speed) }
 }
 
 /** 서류 점수. 회사의 hiringBar 이상이면 합격 */

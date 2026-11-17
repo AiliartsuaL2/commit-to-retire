@@ -1,16 +1,40 @@
 // 1년 진행: 연초 집중 선택 → 이벤트 → 연말 계산
 
 import {
+  AI_CODING_GROWTH_PENALTY,
+  BASE_GROWTH,
+  BURNOUT_RESET_STAMINA,
+  BURNOUTS_TO_RETIRE,
+  CODING_SLOWDOWN_AGE,
+  CODING_SLOWDOWN_MULTIPLIER,
   companyTypeById,
+  DIMINISHING,
   educationById,
   events,
+  EXIT_CHANCE,
+  EXIT_LUCK,
+  EXIT_MIN_YEARS,
+  EXIT_MULTIPLIER,
+  FOCUS_STAT_MULTIPLIER,
   focusById,
+  GRADE_SCORE,
   gradeThresholds,
+  GROWTH_LUCK,
   industryById,
+  MANAGER_GROWTH_SHIFT,
+  NO_PROMOTION_FOCUS,
+  OVERTIME_COST,
+  PROMOTION_CHANCE,
+  RANK_EXPECTATION,
   rankById,
-  ranks,
+  REPUTATION_SUBSTANCE,
   RETIRE_AGE,
+  SALARY_CAP,
+  SAVINGS_RATE,
+  SPECIALTY_FIT_MULTIPLIER,
   specialtyById,
+  STAMINA_RECOVERY,
+  UPPER_SEAT_MULTIPLIER,
 } from '../data'
 import { checkAchievements, evaluateRetirement } from './ending'
 import { generateFeed } from './feed'
@@ -23,6 +47,7 @@ import {
   clampStat,
   marketSalary,
   meetsStats,
+  nextPromotion,
   STAT_KEYS,
   unlock,
 } from './rules'
@@ -33,7 +58,6 @@ import type {
   GameEvent,
   GameState,
   Grade,
-  RankId,
   Stats,
 } from './types'
 
@@ -160,7 +184,7 @@ export function finishYear(state: GameState): GameState {
   const grade: Grade = burnedOut ? 'D' : gradeFor(s, rng)
   let raise = gradeThresholds.find((g) => g.grade === grade)!.raise
   // 시장 연봉보다 많이 받고 있으면 인상 폭이 줄어든다
-  if (s.salary > currentMarket(s) * 1.3) raise *= 0.3
+  if (s.salary > currentMarket(s) * SALARY_CAP.overMarket) raise *= SALARY_CAP.raiseMultiplier
   s.salary = Math.round(s.salary * (1 + raise))
 
   // 승진
@@ -171,7 +195,7 @@ export function finishYear(state: GameState): GameState {
   if (companyEvent) triggers.push(companyEvent)
 
   // 저축
-  s.assets += Math.round(s.salary * 0.2)
+  s.assets += Math.round(s.salary * SAVINGS_RATE)
 
   // 이직 시장: 가끔 오는 헤드헌터 제안 + 직접 지원할 채용 공고
   s.offers = rollHeadhunterOffer(s, grade, s.focus!, rng)
@@ -206,7 +230,7 @@ export function finishYear(state: GameState): GameState {
   s.yearEvents = []
 
   if (s.age >= RETIRE_AGE) s.retirement = evaluateRetirement(s, 'age')
-  else if (s.counters.burnouts >= 3) s.retirement = evaluateRetirement(s, 'burnout')
+  else if (s.counters.burnouts >= BURNOUTS_TO_RETIRE) s.retirement = evaluateRetirement(s, 'burnout')
 
   s.phase = 'year_end'
   s.rngState = rng.state
@@ -219,9 +243,7 @@ export function acknowledgeYear(state: GameState): GameState {
   return { ...state, phase: state.retirement ? 'retired' : 'hub' }
 }
 
-// ─── 연말 세부 규칙 ────────────────────────────────────
-
-const BASE_GROWTH: Stats = { coding: 3, design: 2.2, communication: 1.8, domain: 2.2, reputation: 0.4 }
+// ─── 연말 세부 규칙 (수치는 src/data/balance.ts) ────────
 
 function growStats(s: GameState, rng: Rng): void {
   const company = companyTypeById[s.company.type]
@@ -231,46 +253,50 @@ function growStats(s: GameState, rng: Rng): void {
   const fit = specialtyById[s.profile.specialty].goodIndustries.includes(s.company.industry)
   const track = rankById[s.rank].track
   const ai = aiPressure(s.calendarYear)
+  // 평판은 내세울 실력이 있어야 오른다 (올해 성장 전의 실력 기준)
+  const bestSkill = Math.max(s.stats.coding, s.stats.design, s.stats.domain)
+  const substance = clamp(
+    (bestSkill - REPUTATION_SUBSTANCE.floor) / (REPUTATION_SUBSTANCE.full - REPUTATION_SUBSTANCE.floor),
+    REPUTATION_SUBSTANCE.min,
+    1,
+  )
 
   for (const key of STAT_KEYS) {
-    let g = BASE_GROWTH[key]
-    if (track === 'manager') g += key === 'communication' ? 2 : key === 'coding' ? -2 : 0
+    // 그냥 다니며 느는 양 + 올해의 집중으로 얻는 양에 회사·업종·학력 배수를 곱한다
+    let g = BASE_GROWTH[key] + (focus.statGain[key] ?? 0)
+    if (track === 'manager') g += MANAGER_GROWTH_SHIFT[key] ?? 0
     g *= company.growth * (industry.growth[key] ?? 1) * edu.growthMultiplier
-    if (s.profile.focusStats.includes(key)) g *= 1.6
-    if (fit && (key === 'domain' || key === 'design')) g *= 1.2
-    if (key === 'coding') g *= 1 - ai * 0.4
-    if (key === 'coding' && s.age >= 45) g *= 0.7
-    g += focus.statGain[key] ?? 0
+    if (s.profile.focusStats.includes(key)) g *= FOCUS_STAT_MULTIPLIER
+    if (fit && (key === 'domain' || key === 'design')) g *= SPECIALTY_FIT_MULTIPLIER
+    if (key === 'coding') g *= 1 - ai * AI_CODING_GROWTH_PENALTY
+    if (key === 'coding' && s.age >= CODING_SLOWDOWN_AGE) g *= CODING_SLOWDOWN_MULTIPLIER
+    g = Math.max(0, g)
+    if (key === 'reputation') g *= substance
     // 높을수록 덜 자란다
-    g *= clamp((100 - s.stats[key]) / 40, 0.05, 1.3)
-    g *= rng.range(0.7, 1.3)
+    g *= clamp((100 - s.stats[key]) / DIMINISHING.divisor, DIMINISHING.min, DIMINISHING.max)
+    g *= rng.range(GROWTH_LUCK[0], GROWTH_LUCK[1])
     s.stats[key] = clampStat(s.stats[key] + g)
   }
   for (const flag of focus.setFlags ?? []) if (!s.flags.includes(flag)) s.flags.push(flag)
 }
 
-const OVERTIME_COST = { 1: 5, 2: 10, 3: 18, 4: 26 } as const
+/** 이 집중을 고르면 올해 체력이 얼마나 변하는지 (이벤트로 깎이는 양은 빼고). 연초 화면에도 보여준다 */
+export function staminaChange(s: GameState, focus: FocusId): number {
+  const overtime = companyTypeById[s.company.type].overtime
+  const recovery = s.age >= STAMINA_RECOVERY.oldAge ? STAMINA_RECOVERY.old : STAMINA_RECOVERY.young
+  return recovery + focusById[focus].stamina - OVERTIME_COST[overtime]
+}
 
 /** 체력 갱신. 번아웃이면 true */
 function updateStamina(s: GameState): boolean {
-  const focus = focusById[s.focus!]
-  const overtime = companyTypeById[s.company.type].overtime
-  const recovery = s.age >= 40 ? 10 : 15
-  const next = s.stamina + recovery + focus.stamina - OVERTIME_COST[overtime]
+  const next = s.stamina + staminaChange(s, s.focus!)
   if (next <= 0) {
     s.counters.burnouts += 1
-    s.stamina = 50
+    s.stamina = BURNOUT_RESET_STAMINA
     return true
   }
   s.stamina = clamp(next, 0, 100)
   return false
-}
-
-/** 직급별로 기대되는 실력. 이보다 잘하면 고과가 오른다 */
-const RANK_EXPECTATION: Record<RankId, number> = {
-  newbie: 30, junior: 40, mid: 52, senior: 62, lead: 70,
-  em: 76, director: 82, vp: 86, cto: 90,
-  staff: 78, principal: 85, fellow: 90,
 }
 
 export function performance(s: GameState): number {
@@ -288,9 +314,9 @@ export function performance(s: GameState): number {
 
 function gradeFor(s: GameState, rng: Rng): Grade {
   const focus = focusById[s.focus!]
-  let score = 55 + (performance(s) - RANK_EXPECTATION[s.rank]) * 1.5
-  score += focus.gradeBonus + s.gradeBonus + rng.range(-15, 15)
-  if (s.stamina < 20) score -= 10
+  let score = GRADE_SCORE.base + (performance(s) - RANK_EXPECTATION[s.rank]) * GRADE_SCORE.perPoint
+  score += focus.gradeBonus + s.gradeBonus + rng.range(-GRADE_SCORE.luck, GRADE_SCORE.luck)
+  if (s.stamina < GRADE_SCORE.lowStamina) score -= GRADE_SCORE.lowStaminaPenalty
   return gradeThresholds.find((g) => score >= g.minScore)!.grade
 }
 
@@ -298,19 +324,13 @@ function currentMarket(s: GameState): number {
   return marketSalary(s.company.type, s.company.industry, s.rank, s.careerYear)
 }
 
-const PROMOTION_CHANCE: Record<Grade, number> = { S: 0.9, A: 0.7, B: 0.3, C: 0, D: 0 }
-
 function tryPromotion(s: GameState, grade: Grade, rng: Rng): boolean {
-  const speed = companyTypeById[s.company.type].promotionSpeed
-  const next = ranks.find(
-    (r) =>
-      r.from === s.rank &&
-      (r.track === 'common' || r.track === s.preferredTrack) &&
-      s.careerYear >= Math.ceil(r.minYears / speed) &&
-      meetsStats(s.stats, r.minStats),
-  )
-  // 리드 위로는 자리가 적어서 승진 확률이 절반
-  const seats = rankById[s.rank].track === 'common' && s.rank !== 'lead' ? 1 : 0.5
+  // 쉬거나 이직을 준비한 해는 승진 심사 대상이 아니다
+  if (NO_PROMOTION_FOCUS.includes(s.focus!)) return false
+  const target = nextPromotion(s)
+  const next = target && s.careerYear >= target.minCareerYear && meetsStats(s.stats, target.rank.minStats) ? target.rank : null
+  // 리드 위로는 자리가 적다
+  const seats = rankById[s.rank].track === 'common' && s.rank !== 'lead' ? 1 : UPPER_SEAT_MULTIPLIER
   if (!next || !rng.chance(PROMOTION_CHANCE[grade] * seats)) return false
 
   s.rank = next.id
@@ -319,16 +339,13 @@ function tryPromotion(s: GameState, grade: Grade, rng: Rng): boolean {
   return true
 }
 
-const EXIT_CHANCE = { seed: 0.25, series_b: 0.35, unicorn: 0.5 } as const
-const EXIT_MULTIPLIER = { seed: 10, series_b: 5, unicorn: 3 } as const
-
 function rollCompanyRisk(s: GameState, rng: Rng): FeedTrigger | null {
   const type = s.company.type
   if (!rng.chance(companyTypeById[type].risk)) return null
 
   if (type === 'seed' || type === 'series_b' || type === 'unicorn') {
-    if (s.yearsAtCompany >= 2 && rng.chance(EXIT_CHANCE[type])) {
-      s.assets += Math.round(s.salary * EXIT_MULTIPLIER[type] * rng.range(0.3, 1.5))
+    if (s.yearsAtCompany >= EXIT_MIN_YEARS && rng.chance(EXIT_CHANCE[type])) {
+      s.assets += Math.round(s.salary * EXIT_MULTIPLIER[type] * rng.range(EXIT_LUCK[0], EXIT_LUCK[1]))
       s.counters.exits += 1
       unlock(s, 'stock_lottery')
       if (type !== 'unicorn') s.company = { ...s.company, name: `${s.company.name} (인수됨)`, type: 'bigtech' }

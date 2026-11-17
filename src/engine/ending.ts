@@ -1,6 +1,6 @@
 // 업적 판정과 은퇴 평가
 
-import { achievementById, fameGrades, rankById } from '../data'
+import { achievementById, FAME_REPUTATION_WEIGHT, fameGrades, rankById } from '../data'
 import { unlock } from './rules'
 import type { GameState, RetireReason, Retirement } from './types'
 
@@ -20,7 +20,7 @@ export function checkAchievements(state: GameState, retiring: RetireReason | nul
 export function evaluateRetirement(state: GameState, reason: RetireReason): Retirement {
   checkAchievements(state, reason)
   const rankScore = rankById[state.bestRank].fameScore
-  const reputationScore = Math.round(state.stats.reputation * 0.5)
+  const reputationScore = Math.round(state.stats.reputation * FAME_REPUTATION_WEIGHT)
   const achievementScore = state.achievements.reduce((sum, id) => sum + (achievementById[id]?.fame ?? 0), 0)
   const fameScore = rankScore + reputationScore + achievementScore
   const tier = fameGrades.find((g) => fameScore >= g.minScore)!
