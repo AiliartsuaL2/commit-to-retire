@@ -227,6 +227,7 @@ export const events: GameEvent[] = [
     emoji: '🍶',
     title: '회식 자리 소주 세례',
     text: '2차 노래방 가기 전, 취한 동료가 갑자기 내 얼굴에 소주를 뿌렸어요. 다들 얼어붙었어요.',
+    // TODO: 지인 공유 단계라 일부러 자주 나오게 둠 (한 판 약 87%). 나중에 1로 낮춰 레어 이벤트로 (기획서 13장)
     weight: 6,
     once: true,
     choices: [
