@@ -221,12 +221,12 @@ export const events: GameEvent[] = [
     id: 'predecessor_quit',
     category: '레거시',
     emoji: '📦',
-    title: '전임자 퇴사, 인수인계 {days}일',
+    title: '전임자 퇴사, 인수인계 {days}',
     text: '{systems}(을)를 맡던 {who}(이)가 퇴사해요. 인수인계 문서라고 받은 건 {doc}뿐이에요.',
     weight: 7,
     severity: true,
     vars: {
-      days: { min: 1, max: 3 },
+      days: ['하루', '이틀', '사흘'],
       who: ['선배', '사수', '옆자리 과장님', '팀의 유일한 시니어'],
       systems: {
         bySeverity: [
@@ -240,7 +240,7 @@ export const events: GameEvent[] = [
     conditions: { minCareerYear: 2 },
     choices: [
       {
-        label: '남은 {days}일 동안 질문 폭격을 한다',
+        label: '남은 {days} 동안 질문 폭격을 한다',
         check: { communication: 35 },
         outcomes: [
           { chance: 0.8, text: '{who}(이)가 퇴사 전날까지 시달렸지만 덕분에 살았어요.', tone: 'skill', effects: { stamina: -8, stats: { domain: 5 } } },
