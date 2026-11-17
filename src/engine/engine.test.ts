@@ -4,10 +4,28 @@ import { acceptOffer, nextYear } from './hub'
 import { createRng } from './rng'
 import { createGame, firstJobOptions, startingStats } from './setup'
 import type { GameState, Profile } from './types'
-import { acknowledgeYear, chooseEventOption, currentEvent, finishYear, startYear } from './year'
+import { acknowledgeYear, checkFailMultiplier, chooseEventOption, finishYear, startYear } from './year'
 
-/** 능력치 조건이 없는 첫 선택지 */
-const freeChoice = (s: GameState) => currentEvent(s)!.choices.findIndex((c) => !c.requires)
+/** 선택지는 언제나 고를 수 있으니 첫 번째를 고른다 */
+const freeChoice = (_s: GameState) => 0
+
+describe('능력치 판정', () => {
+  const stats = { coding: 50, design: 25, communication: 40, domain: 30, reputation: 0 }
+
+  it('판정이 없으면 확률을 바꾸지 않는다', () => {
+    expect(checkFailMultiplier(stats, undefined)).toBe(1)
+  })
+
+  it('기준보다 낮으면 실패 확률이 오르고 높으면 내려간다', () => {
+    expect(checkFailMultiplier(stats, { coding: 50 })).toBe(1)
+    expect(checkFailMultiplier(stats, { design: 50 })).toBe(3)
+    expect(checkFailMultiplier(stats, { coding: 40 })).toBeLessThan(1)
+  })
+
+  it('여러 능력치를 보면 가장 모자란 쪽을 기준으로 한다', () => {
+    expect(checkFailMultiplier(stats, { coding: 25, design: 50 })).toBe(3)
+  })
+})
 
 const profile: Profile = {
   name: '테스트',

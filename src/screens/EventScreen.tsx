@@ -1,5 +1,4 @@
-import { statLabels } from '../data'
-import { currentEvent, meetsStats, type GameState, type StatKey } from '../engine'
+import { currentEvent, type GameState } from '../engine'
 import { useGame } from '../store/game'
 import { Badge, Button, Choice, Screen, StatusHeader } from '../ui'
 
@@ -59,18 +58,11 @@ export function EventScreen({ game }: { game: GameState }) {
       </div>
 
       <div className="flex flex-col gap-2">
-        {event.choices.map((c, i) => {
-          const ok = meetsStats(game.stats, c.requires)
-          const req = Object.entries(c.requires ?? {})
-            .map(([k, v]) => `${statLabels[k as StatKey]} ${v}`)
-            .join(' · ')
-          return (
-            <Choice key={c.label} disabled={!ok} onClick={() => choose(i)}>
-              <p className="font-semibold">{c.label}</p>
-              {req && <p className={`mt-1 text-xs ${ok ? 'text-blue-500' : 'text-red-500'}`}>{ok ? `✓ ${req}` : `${req} 필요`}</p>}
-            </Choice>
-          )
-        })}
+        {event.choices.map((c, i) => (
+          <Choice key={c.label} onClick={() => choose(i)}>
+            <p className="font-semibold">{c.label}</p>
+          </Choice>
+        ))}
       </div>
     </Screen>
   )

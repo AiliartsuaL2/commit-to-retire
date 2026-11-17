@@ -3,7 +3,6 @@
 import { focuses, specialties, playStyles, educations, START_AGE_MIN, START_AGE_MAX, industries } from '../data'
 import { acceptOffer, canChooseTrack, chooseTrack, declineOffers, nextYear } from './hub'
 import { createRng } from './rng'
-import { meetsStats } from './rules'
 import { createGame, firstJobOptions } from './setup'
 import type { GameState, Profile } from './types'
 import { acknowledgeYear, chooseEventOption, currentEvent, finishYear, startYear } from './year'
@@ -44,10 +43,10 @@ export function playToEnd(initial: GameState, strategy: BotStrategy = 'random', 
     if (s.stamina < 35) focus = 'rest'
     s = startYear(s, focus)
 
-    // 이벤트: 고를 수 있는 선택지 중 무작위
+    // 이벤트: 선택지 중 무작위
     for (let event = currentEvent(s); event; event = currentEvent(s)) {
-      const options = event.choices.map((c, i) => ({ c, i })).filter(({ c }) => meetsStats(s.stats, c.requires))
-      s = chooseEventOption(s, rng.pick(options).i).state
+      const choiceIndex = rng.int(0, event.choices.length - 1)
+      s = chooseEventOption(s, choiceIndex).state
     }
 
     s = acknowledgeYear(finishYear(s))

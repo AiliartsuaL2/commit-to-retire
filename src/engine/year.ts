@@ -100,11 +100,10 @@ export function chooseEventOption(
   if (state.phase !== 'event' || !event) throw new Error('진행 중인 이벤트가 없어요')
   const choice = event.choices[choiceIndex]
   if (!choice) throw new Error(`없는 선택지예요: ${choiceIndex}`)
-  if (!meetsStats(state.stats, choice.requires)) throw new Error('능력치 조건이 부족해요')
-
   const s = structuredClone(state)
   const rng = createRng(s.rngState)
-  const outcome = rng.weighted(choice.outcomes, (o) => o.chance)!
+  const failMultiplier = checkFailMultiplier(s.stats, choice.check)
+  const outcome = rng.weighted(choice.outcomes, (o) => (o.tone === 'unlucky' ? o.chance * failMultiplier : o.chance))!
 
   applyEffects(s, outcome.effects)
   s.pendingEvents.shift()
@@ -112,6 +111,17 @@ export function chooseEventOption(
   s.yearEvents.push({ eventId: event.id, choiceIndex, outcomeText: outcome.text })
   s.rngState = rng.state
   return { state: s, outcome }
+}
+
+/**
+ * 능력치 판정: 실패 결과 확률에 곱할 배수.
+ * 가장 모자란 능력치 기준으로, 기준의 절반이면 ×3, 기준과 같으면 ×1, 1.5배면 ×0.5 (최소 ×0.3)
+ */
+export function checkFailMultiplier(stats: Stats, check: Partial<Stats> | undefined): number {
+  const ratios = Object.entries(check ?? {}).map(([key, target]) => stats[key as keyof Stats] / Math.max(1, target ?? 1))
+  if (ratios.length === 0) return 1
+  const worst = Math.min(...ratios)
+  return worst >= 1 ? Math.max(0.3, 1 - (worst - 1)) : 1 + (1 - worst) * 4
 }
 
 // ─── 연말 ──────────────────────────────────────────────

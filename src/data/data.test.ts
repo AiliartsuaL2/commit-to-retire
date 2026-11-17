@@ -66,8 +66,11 @@ describe('데이터 무결성', () => {
         }
       })
 
-      it(`${event.id}: 조건 없이 고를 수 있는 선택지가 하나 이상 있다`, () => {
-        expect(event.choices.some((c) => !c.requires)).toBe(true)
+      it(`${event.id}: 능력치 판정이 있는 선택지는 성공·실패 결과가 모두 있다`, () => {
+        for (const choice of event.choices.filter((c) => c.check)) {
+          expect(choice.outcomes.some((o) => o.tone === 'unlucky'), `${choice.label}: 실패 결과 없음`).toBe(true)
+          expect(choice.outcomes.some((o) => o.tone !== 'unlucky'), `${choice.label}: 성공 결과 없음`).toBe(true)
+        }
       })
 
       it(`${event.id}: 참조하는 업적이 존재한다`, () => {

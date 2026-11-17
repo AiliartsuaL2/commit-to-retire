@@ -2,7 +2,7 @@ import type { GameEvent } from '../engine/types'
 
 // 이벤트 콘텐츠. 형식은 src/engine/types.ts의 GameEvent.
 // - 선택지마다 outcomes의 chance 합은 1 (data.test.ts가 검사)
-// - 확률은 플레이어에게 보이지 않고, requires(능력치 조건)만 보인다
+// - 확률과 능력치 판정(check)은 플레이어에게 보이지 않는다. check가 있는 선택지는 실패(unlucky)와 성공 결과가 모두 필요
 // - 문구는 해요체
 
 const STARTUPS = ['seed', 'series_b', 'unicorn'] as const
@@ -31,9 +31,15 @@ export const events: GameEvent[] = [
       },
       {
         label: '월요일에 하자고 설득한다',
-        requires: { communication: 40 },
+        check: { communication: 40 },
         outcomes: [
-          { chance: 1, text: '팀장이 마지못해 동의했어요.', tone: 'skill', effects: { stats: { communication: 2 } } },
+          { chance: 0.7, text: '팀장이 마지못해 동의했어요.', tone: 'skill', effects: { stats: { communication: 2 } } },
+          {
+            chance: 0.3,
+            text: "팀장이 '말 많네' 하며 그냥 배포했어요. 주말이 날아갔어요.",
+            tone: 'unlucky',
+            effects: { stamina: -15, counters: { incidents: 1 }, achievement: 'weekend_rollback' },
+          },
         ],
       },
     ],
@@ -48,7 +54,7 @@ export const events: GameEvent[] = [
     choices: [
       {
         label: '혼자 원인을 찾는다',
-        requires: { coding: 50 },
+        check: { coding: 50 },
         outcomes: [
           { chance: 0.7, text: '30분 만에 범인 쿼리를 찾아 죽였어요. 아침에 팀장이 칭찬했어요.', tone: 'skill', effects: { stamina: -8, gradeBonus: 8, counters: { incidents: 1 } } },
           { chance: 0.3, text: '해 뜰 때까지 헤맸어요. 결국 선배가 5분 만에 해결했어요.', tone: 'unlucky', effects: { stamina: -15, stats: { coding: 2 }, counters: { incidents: 1 } } },
@@ -80,7 +86,7 @@ export const events: GameEvent[] = [
     choices: [
       {
         label: '긴급 스케일아웃을 주도한다',
-        requires: { design: 50 },
+        check: { design: 50 },
         outcomes: [
           { chance: 0.75, text: '서버를 늘리고 캐시를 붙여 버텼어요. 사내 공지에 이름이 올라갔어요.', tone: 'skill', effects: { stamina: -15, gradeBonus: 15, stats: { reputation: 3 }, counters: { incidents: 1 } } },
           { chance: 0.25, text: '늘린 서버가 DB를 더 괴롭혔어요. 매출 손실 보고서를 썼어요.', tone: 'unlucky', effects: { stamina: -20, gradeBonus: -5, stats: { design: 3 }, counters: { incidents: 1 } } },
@@ -106,7 +112,7 @@ export const events: GameEvent[] = [
     choices: [
       {
         label: '이참에 리팩토링한다',
-        requires: { design: 40 },
+        check: { design: 40 },
         outcomes: [
           { chance: 0.6, text: '깔끔하게 쪼갰어요. 다음 사람은 덜 울 거예요.', tone: 'skill', effects: { stamina: -10, stats: { design: 4 }, counters: { refactors: 1 } } },
           { chance: 0.4, text: '리팩토링하다 숨은 정산 로직을 깨뜨렸어요. 경위서를 썼어요.', tone: 'unlucky', effects: { stamina: -10, gradeBonus: -15, stats: { design: 2 }, counters: { refactors: 1 } } },
@@ -154,9 +160,10 @@ export const events: GameEvent[] = [
     choices: [
       {
         label: '이틀 동안 질문 폭격을 한다',
-        requires: { communication: 35 },
+        check: { communication: 35 },
         outcomes: [
-          { chance: 1, text: '선배가 퇴사 전날까지 시달렸지만 덕분에 살았어요.', tone: 'skill', effects: { stamina: -8, stats: { domain: 5 } } },
+          { chance: 0.8, text: '선배가 퇴사 전날까지 시달렸지만 덕분에 살았어요.', tone: 'skill', effects: { stamina: -8, stats: { domain: 5 } } },
+          { chance: 0.2, text: "질문할 때마다 선배가 '그건 나도 몰라'만 반복했어요.", tone: 'unlucky', effects: { stamina: -8, stats: { domain: 2 } } },
         ],
       },
       {
@@ -187,7 +194,7 @@ export const events: GameEvent[] = [
       },
       {
         label: '범위를 줄이자고 협상한다',
-        requires: { communication: 50 },
+        check: { communication: 50 },
         outcomes: [
           { chance: 0.8, text: '핵심만 넣고 나머지는 2차 오픈으로 미뤘어요.', tone: 'skill', effects: { stats: { communication: 3 }, gradeBonus: 5 } },
           { chance: 0.2, text: '임원이 "그냥 다 해"라고 했어요.', tone: 'unlucky', effects: { stamina: -15 } },
@@ -212,9 +219,10 @@ export const events: GameEvent[] = [
       },
       {
         label: '작업 범위를 쪼개서 일정을 다시 잡는다',
-        requires: { design: 45 },
+        check: { design: 45 },
         outcomes: [
-          { chance: 1, text: '팀장이 "이게 이렇게 큰 거였어?"라며 일주일을 줬어요.', tone: 'skill', effects: { stats: { design: 2, communication: 2 } } },
+          { chance: 0.7, text: '팀장이 "이게 이렇게 큰 거였어?"라며 일주일을 줬어요.', tone: 'skill', effects: { stats: { design: 2, communication: 2 } } },
+          { chance: 0.3, text: '팀장이 "그래서 내일까지 되냐고"라고 다시 물었어요. 밤을 샜어요.', tone: 'unlucky', effects: { stamina: -15, stats: { design: 1 } } },
         ],
       },
     ],
@@ -271,7 +279,7 @@ export const events: GameEvent[] = [
     choices: [
       {
         label: '데이터로 반박한다',
-        requires: { communication: 45, domain: 40 },
+        check: { communication: 45, domain: 40 },
         outcomes: [
           { chance: 0.7, text: '지난 프로젝트 지연 통계를 보여줬더니 PM이 조용해졌어요.', tone: 'skill', effects: { stats: { communication: 3 }, gradeBonus: 5 } },
           { chance: 0.3, text: '맞는 말이었지만 PM 상사가 PM 편을 들었어요.', tone: 'unlucky', effects: { gradeBonus: -5 } },
@@ -325,7 +333,7 @@ export const events: GameEvent[] = [
       },
       {
         label: '린터 규칙으로 정리하자고 제안한다',
-        requires: { communication: 40 },
+        check: { communication: 40 },
         outcomes: [
           { chance: 0.7, text: '팀 전체에 린터가 도입됐어요. 다들 고마워해요.', tone: 'skill', effects: { stats: { design: 2, reputation: 1 }, gradeBonus: 5 } },
           { chance: 0.3, text: '시니어가 "내 리뷰가 불만이냐"며 삐졌어요.', tone: 'unlucky', effects: { gradeBonus: -5 } },
@@ -346,7 +354,7 @@ export const events: GameEvent[] = [
     choices: [
       {
         label: '제안서를 들고 연봉 협상을 한다',
-        requires: { communication: 50 },
+        check: { communication: 50 },
         outcomes: [
           { chance: 0.6, text: '회사가 카운터 오퍼로 연봉을 올려 줬어요.', tone: 'skill', effects: { salaryPct: 0.1 } },
           { chance: 0.4, text: '"그럼 거기 가세요"라는 답이 돌아왔어요. 분위기가 어색해요.', tone: 'unlucky', effects: { gradeBonus: -10 } },
@@ -425,7 +433,7 @@ export const events: GameEvent[] = [
       },
       {
         label: '3개만 만들고 설득한다',
-        requires: { communication: 45 },
+        check: { communication: 45 },
         outcomes: [
           { chance: 0.6, text: '"전문가 의견이 그렇다면야" 하며 넘어갔어요.', tone: 'skill', effects: { stats: { communication: 3 } } },
           { chance: 0.4, text: '부장님이 우리 회사 대표에게 전화했어요.', tone: 'unlucky', effects: { gradeBonus: -15 } },
@@ -474,7 +482,7 @@ export const events: GameEvent[] = [
       },
       {
         label: '자동화 스크립트를 짠다',
-        requires: { coding: 55 },
+        check: { coding: 55 },
         outcomes: [
           { chance: 0.8, text: '다음 감사부터는 버튼 하나로 끝나요. 팀의 영웅이 됐어요.', tone: 'skill', effects: { stats: { coding: 2, reputation: 2 }, gradeBonus: 10 } },
           { chance: 0.2, text: '스크립트가 로그 일부를 빼먹어서 지적을 받았어요.', tone: 'unlucky', effects: { gradeBonus: -10 } },
@@ -526,7 +534,7 @@ export const events: GameEvent[] = [
       },
       {
         label: '"우리 규모엔 과해요"라고 말한다',
-        requires: { design: 55, communication: 45 },
+        check: { design: 55, communication: 45 },
         outcomes: [
           { chance: 0.6, text: 'CTO가 설득됐어요. 1년 뒤 다른 회사의 실패 사례를 보며 안도했어요.', tone: 'skill', effects: { stats: { reputation: 2 }, gradeBonus: 10 } },
           { chance: 0.4, text: '"변화를 두려워하는 사람"으로 찍혔어요.', tone: 'unlucky', effects: { gradeBonus: -10 } },
@@ -568,7 +576,7 @@ export const events: GameEvent[] = [
     choices: [
       {
         label: '테스트까지 붙여서 PR을 올린다',
-        requires: { coding: 55 },
+        check: { coding: 55 },
         outcomes: [
           { chance: 0.6, text: 'PR이 머지됐어요! 컨트리뷰터 목록에 내 이름이 올라갔어요.', tone: 'skill', effects: { stats: { reputation: 5, coding: 2 } } },
           { chance: 0.4, text: '"이건 의도된 동작입니다"라는 한 줄과 함께 닫혔어요.', tone: 'unlucky', effects: { stats: { coding: 2 } } },

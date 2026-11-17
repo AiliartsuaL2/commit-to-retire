@@ -184,8 +184,12 @@ export interface EventOutcome {
 
 export interface EventChoice {
   label: string
-  /** 선택 가능 조건. 화면에 공개된다 ("소통 40 필요") */
-  requires?: Partial<Stats>
+  /**
+   * 능력치 판정 (화면에 보이지 않는다). 선택은 언제나 가능하고,
+   * 능력치가 기준보다 낮으면 실패(tone: 'unlucky') 결과 확률이 오르고, 높으면 내려간다.
+   * check가 있으면 실패 결과와 성공 결과가 모두 있어야 한다.
+   */
+  check?: Partial<Stats>
   outcomes: EventOutcome[]
 }
 
