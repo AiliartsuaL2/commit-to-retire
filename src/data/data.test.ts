@@ -66,6 +66,10 @@ describe('데이터 무결성', () => {
         }
       })
 
+      it(`${event.id}: 조건 없이 고를 수 있는 선택지가 하나 이상 있다`, () => {
+        expect(event.choices.some((c) => !c.requires)).toBe(true)
+      })
+
       it(`${event.id}: 참조하는 업적이 존재한다`, () => {
         for (const choice of event.choices) {
           for (const outcome of choice.outcomes) {

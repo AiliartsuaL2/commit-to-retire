@@ -3,8 +3,11 @@ import { playToEnd, randomGame } from './bot'
 import { acceptOffer, nextYear } from './hub'
 import { createRng } from './rng'
 import { createGame, firstJobOptions, startingStats } from './setup'
-import type { Profile } from './types'
-import { acknowledgeYear, chooseEventOption, finishYear, startYear } from './year'
+import type { GameState, Profile } from './types'
+import { acknowledgeYear, chooseEventOption, currentEvent, finishYear, startYear } from './year'
+
+/** 능력치 조건이 없는 첫 선택지 */
+const freeChoice = (s: GameState) => currentEvent(s)!.choices.findIndex((c) => !c.requires)
 
 const profile: Profile = {
   name: '테스트',
@@ -63,7 +66,7 @@ describe('1년 진행', () => {
   it('연초 → 이벤트 → 연말 → 허브 순서로 진행된다', () => {
     let s = startYear(game(), 'study')
     expect(s.phase).toBe('event')
-    while (s.pendingEvents.length > 0) s = chooseEventOption(s, 0).state
+    while (s.pendingEvents.length > 0) s = chooseEventOption(s, freeChoice(s)).state
     s = finishYear(s)
     expect(s.phase).toBe('year_end')
     expect(s.history).toHaveLength(1)
@@ -86,7 +89,7 @@ describe('1년 진행', () => {
 
   it('실직 상태에서는 회사를 고르기 전까지 다음 해로 못 간다', () => {
     let s = startYear(game(), 'study')
-    while (s.pendingEvents.length > 0) s = chooseEventOption(s, 0).state
+    while (s.pendingEvents.length > 0) s = chooseEventOption(s, freeChoice(s)).state
     s = acknowledgeYear(finishYear(s))
     s = { ...s, unemployed: true, offers: s.offers.length ? s.offers : [{ company: { name: '테스트사', type: 'midsize', industry: 'b2c' }, rank: s.rank, salary: 4000 }] }
     expect(() => nextYear(s)).toThrow()

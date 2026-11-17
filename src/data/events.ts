@@ -1,7 +1,14 @@
 import type { GameEvent } from '../engine/types'
 
-// 이벤트 콘텐츠. 형식 예시 1개만 두고, 콘텐츠 단계에서 20개로 채운다.
+// 이벤트 콘텐츠. 형식은 src/engine/types.ts의 GameEvent.
+// - 선택지마다 outcomes의 chance 합은 1 (data.test.ts가 검사)
+// - 확률은 플레이어에게 보이지 않고, requires(능력치 조건)만 보인다
+// - 문구는 해요체
+
+const STARTUPS = ['seed', 'series_b', 'unicorn'] as const
+
 export const events: GameEvent[] = [
+  // ─── 장애 ──────────────────────────────────────────────
   {
     id: 'friday_deploy',
     category: '장애',
@@ -27,6 +34,672 @@ export const events: GameEvent[] = [
         requires: { communication: 40 },
         outcomes: [
           { chance: 1, text: '팀장이 마지못해 동의했어요.', tone: 'skill', effects: { stats: { communication: 2 } } },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'dawn_db_lock',
+    category: '장애',
+    emoji: '🌙',
+    title: '새벽 3시 DB 락',
+    text: '알림이 울려요. 주문 테이블에 락이 걸려서 서비스가 멈췄어요.',
+    weight: 8,
+    choices: [
+      {
+        label: '혼자 원인을 찾는다',
+        requires: { coding: 50 },
+        outcomes: [
+          { chance: 0.7, text: '30분 만에 범인 쿼리를 찾아 죽였어요. 아침에 팀장이 칭찬했어요.', tone: 'skill', effects: { stamina: -8, gradeBonus: 8, counters: { incidents: 1 } } },
+          { chance: 0.3, text: '해 뜰 때까지 헤맸어요. 결국 선배가 5분 만에 해결했어요.', tone: 'unlucky', effects: { stamina: -15, stats: { coding: 2 }, counters: { incidents: 1 } } },
+        ],
+      },
+      {
+        label: '선배를 깨운다',
+        outcomes: [
+          { chance: 1, text: '선배가 해결했어요. 대신 선배 눈빛이 일주일 동안 차가웠어요.', effects: { stamina: -5, stats: { domain: 2 }, counters: { incidents: 1 } } },
+        ],
+      },
+      {
+        label: '못 본 척 다시 잔다',
+        outcomes: [
+          { chance: 0.4, text: '다른 사람이 처리했어요. 아무도 모르는 것 같아요.', tone: 'lucky', effects: { stamina: 5 } },
+          { chance: 0.6, text: '아침 회의에서 알림 수신 기록이 공개됐어요.', tone: 'unlucky', effects: { gradeBonus: -20, stats: { reputation: -3 } } },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'black_friday',
+    category: '장애',
+    emoji: '🛒',
+    title: '블랙프라이데이 트래픽 폭주',
+    text: '평소의 30배 트래픽이 몰려와요. 결제 서버 응답이 10초를 넘겼어요.',
+    weight: 8,
+    conditions: { industries: ['commerce', 'b2c'] },
+    choices: [
+      {
+        label: '긴급 스케일아웃을 주도한다',
+        requires: { design: 50 },
+        outcomes: [
+          { chance: 0.75, text: '서버를 늘리고 캐시를 붙여 버텼어요. 사내 공지에 이름이 올라갔어요.', tone: 'skill', effects: { stamina: -15, gradeBonus: 15, stats: { reputation: 3 }, counters: { incidents: 1 } } },
+          { chance: 0.25, text: '늘린 서버가 DB를 더 괴롭혔어요. 매출 손실 보고서를 썼어요.', tone: 'unlucky', effects: { stamina: -20, gradeBonus: -5, stats: { design: 3 }, counters: { incidents: 1 } } },
+        ],
+      },
+      {
+        label: '시키는 대로 로그만 본다',
+        outcomes: [
+          { chance: 1, text: '밤새 로그를 봤어요. 많이 배웠지만 아무도 기억하지 않아요.', effects: { stamina: -12, stats: { domain: 3 }, counters: { incidents: 1 } } },
+        ],
+      },
+    ],
+  },
+
+  // ─── 레거시 ────────────────────────────────────────────
+  {
+    id: 'legacy_no_comment',
+    category: '레거시',
+    emoji: '🦴',
+    title: '주석 없는 20년 된 코드',
+    text: '3,000줄짜리 함수를 고쳐야 해요. 변수 이름은 a1, a2, temp3이에요.',
+    weight: 9,
+    choices: [
+      {
+        label: '이참에 리팩토링한다',
+        requires: { design: 40 },
+        outcomes: [
+          { chance: 0.6, text: '깔끔하게 쪼갰어요. 다음 사람은 덜 울 거예요.', tone: 'skill', effects: { stamina: -10, stats: { design: 4 }, counters: { refactors: 1 } } },
+          { chance: 0.4, text: '리팩토링하다 숨은 정산 로직을 깨뜨렸어요. 경위서를 썼어요.', tone: 'unlucky', effects: { stamina: -10, gradeBonus: -15, stats: { design: 2 }, counters: { refactors: 1 } } },
+        ],
+      },
+      {
+        label: '필요한 한 줄만 고친다',
+        outcomes: [
+          { chance: 1, text: '한 줄 고치고 조용히 커밋했어요. 기술 부채가 또 쌓였어요.', effects: { stats: { domain: 1 } } },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'do_not_touch',
+    category: '레거시',
+    emoji: '⚠️',
+    title: '"건드리지 마시오" 모듈',
+    text: '주석에 "이 코드는 건드리지 마시오. 2014년 김OO"이라고 적혀 있어요. 그런데 여기에 버그가 있어요.',
+    weight: 6,
+    choices: [
+      {
+        label: '용기를 내서 고친다',
+        outcomes: [
+          { chance: 0.5, text: '고쳤어요! 김OO 님이 왜 그렇게 적었는지는 끝내 몰라요.', tone: 'lucky', effects: { gradeBonus: 10, stats: { coding: 2 }, counters: { refactors: 1 } } },
+          { chance: 0.5, text: '왜 건드리지 말라고 했는지 알게 됐어요. 3일 밤을 샜어요.', tone: 'unlucky', effects: { stamina: -20, stats: { coding: 3, domain: 3 }, counters: { incidents: 1 } } },
+        ],
+      },
+      {
+        label: '바깥에서 우회 코드를 덧댄다',
+        outcomes: [
+          { chance: 1, text: '우회 코드 위에 "이 코드도 건드리지 마시오"라고 적었어요.', effects: { stats: { domain: 1 } } },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'predecessor_quit',
+    category: '레거시',
+    emoji: '📦',
+    title: '전임자 퇴사, 인수인계 이틀',
+    text: '시스템 세 개를 맡던 선배가 퇴사해요. 인수인계 문서는 노션 페이지 한 장이에요.',
+    weight: 7,
+    conditions: { minCareerYear: 2 },
+    choices: [
+      {
+        label: '이틀 동안 질문 폭격을 한다',
+        requires: { communication: 35 },
+        outcomes: [
+          { chance: 1, text: '선배가 퇴사 전날까지 시달렸지만 덕분에 살았어요.', tone: 'skill', effects: { stamina: -8, stats: { domain: 5 } } },
+        ],
+      },
+      {
+        label: '코드 보면 알겠지 하고 보낸다',
+        outcomes: [
+          { chance: 0.3, text: '코드가 생각보다 읽기 쉬웠어요.', tone: 'lucky', effects: { stats: { domain: 3 } } },
+          { chance: 0.7, text: '첫 장애 때 선배에게 카톡했는데 읽씹당했어요.', tone: 'unlucky', effects: { stamina: -15, stats: { domain: 4 }, counters: { incidents: 1 } } },
+        ],
+      },
+    ],
+  },
+
+  // ─── 일정 ──────────────────────────────────────────────
+  {
+    id: 'spec_change_d3',
+    category: '일정',
+    emoji: '📅',
+    title: '오픈 D-3, 기획 변경',
+    text: '기획자가 "아주 작은 변경"이라며 화면 흐름 전체를 바꿔 왔어요. 오픈일은 그대로예요.',
+    weight: 9,
+    choices: [
+      {
+        label: '밤새서 맞춘다',
+        outcomes: [
+          { chance: 0.7, text: '오픈은 지켰어요. 거울 속 내가 낯설어요.', effects: { stamina: -20, gradeBonus: 10 } },
+          { chance: 0.3, text: '오픈 당일 버그가 터졌어요. 밤샌 보람이 없었어요.', tone: 'unlucky', effects: { stamina: -25, gradeBonus: -5, counters: { incidents: 1 } } },
+        ],
+      },
+      {
+        label: '범위를 줄이자고 협상한다',
+        requires: { communication: 50 },
+        outcomes: [
+          { chance: 0.8, text: '핵심만 넣고 나머지는 2차 오픈으로 미뤘어요.', tone: 'skill', effects: { stats: { communication: 3 }, gradeBonus: 5 } },
+          { chance: 0.2, text: '임원이 "그냥 다 해"라고 했어요.', tone: 'unlucky', effects: { stamina: -15 } },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'simple_by_tomorrow',
+    category: '일정',
+    emoji: '⏰',
+    title: '"간단한 거니까 내일까지"',
+    text: '팀장이 엑셀 다운로드 기능을 내일까지 해 달래요. 열어 보니 권한·필터·대용량 처리가 다 필요해요.',
+    weight: 8,
+    choices: [
+      {
+        label: '일단 된다고 한다',
+        outcomes: [
+          { chance: 0.5, text: '대충 만들어서 넘겼어요. 3개월 뒤 대용량에서 터졌어요.', tone: 'unlucky', effects: { stamina: -10, counters: { incidents: 1 } } },
+          { chance: 0.5, text: '어떻게든 해냈어요. 팀장은 역시 간단했다고 생각해요.', effects: { stamina: -15, stats: { coding: 2 } } },
+        ],
+      },
+      {
+        label: '작업 범위를 쪼개서 일정을 다시 잡는다',
+        requires: { design: 45 },
+        outcomes: [
+          { chance: 1, text: '팀장이 "이게 이렇게 큰 거였어?"라며 일주일을 줬어요.', tone: 'skill', effects: { stats: { design: 2, communication: 2 } } },
+        ],
+      },
+    ],
+  },
+
+  // ─── 사람 ──────────────────────────────────────────────
+  {
+    id: 'soju_shower',
+    category: '사람',
+    emoji: '🍶',
+    title: '회식 자리 소주 세례',
+    text: '2차 노래방 가기 전, 취한 동료가 갑자기 내 얼굴에 소주를 뿌렸어요. 다들 얼어붙었어요.',
+    weight: 6,
+    once: true,
+    choices: [
+      {
+        label: '웃으며 넘긴다',
+        outcomes: [
+          { chance: 0.6, text: '"아 시원하다~" 한마디에 분위기가 풀렸어요. 다음 날 동료가 커피를 사 왔어요.', tone: 'skill', effects: { stamina: -5, stats: { communication: 3 }, achievement: 'soju_shower' } },
+          { chance: 0.4, text: '웃어넘겼더니 그 동료가 회식 때마다 같은 장난을 쳐요.', tone: 'unlucky', effects: { stamina: -15, achievement: 'soju_shower' } },
+        ],
+      },
+      {
+        label: '맥주로 맞받아친다',
+        outcomes: [
+          { chance: 0.5, text: '테이블 전체가 물싸움판이 됐어요. 팀 회식 레전드로 남았어요.', tone: 'lucky', effects: { stats: { communication: 4, reputation: 1 }, achievement: 'soju_shower' } },
+          { chance: 0.5, text: '사장님이 경찰을 불렀어요. 다음 날 인사팀 면담을 했어요.', tone: 'unlucky', effects: { gradeBonus: -15, stats: { reputation: -2 }, achievement: 'soju_shower' } },
+        ],
+      },
+      {
+        label: '다음 날 인사팀에 신고한다',
+        outcomes: [
+          { chance: 0.6, text: '동료가 징계를 받고 정식으로 사과했어요. 회식 문화도 조금 바뀌었어요.', tone: 'skill', effects: { stamina: 5, achievement: 'soju_shower' } },
+          { chance: 0.4, text: '흐지부지 끝났고 "예민한 사람"이라는 뒷말만 남았어요.', tone: 'unlucky', effects: { stats: { communication: -2 }, gradeBonus: -5, achievement: 'soju_shower' } },
+        ],
+      },
+      {
+        label: '블라인더에 올린다',
+        outcomes: [
+          { chance: 0.5, text: '글이 조회수 10만을 찍고 기사까지 났어요. 회사가 공식 사과문을 냈어요.', tone: 'lucky', effects: { stats: { reputation: 3 }, achievement: 'soju_shower' } },
+          { chance: 0.5, text: '세 줄 만에 회사 사람들이 글쓴이를 특정했어요. 팀 분위기가 싸해졌어요.', tone: 'unlucky', effects: { gradeBonus: -10, stamina: -10, achievement: 'soju_shower' } },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'kkondae_pm',
+    category: '사람',
+    emoji: '🙄',
+    title: '"개발자는 코딩만 하면 되잖아요"',
+    text: 'PM이 회의에서 기술 검토 없이 일정을 확정하고, 질문하자 이렇게 말했어요.',
+    weight: 7,
+    choices: [
+      {
+        label: '데이터로 반박한다',
+        requires: { communication: 45, domain: 40 },
+        outcomes: [
+          { chance: 0.7, text: '지난 프로젝트 지연 통계를 보여줬더니 PM이 조용해졌어요.', tone: 'skill', effects: { stats: { communication: 3 }, gradeBonus: 5 } },
+          { chance: 0.3, text: '맞는 말이었지만 PM 상사가 PM 편을 들었어요.', tone: 'unlucky', effects: { gradeBonus: -5 } },
+        ],
+      },
+      {
+        label: '참고 코딩만 한다',
+        outcomes: [
+          { chance: 1, text: '예상대로 일정이 밀렸고, 책임은 개발팀이 졌어요.', effects: { stamina: -10, gradeBonus: -5 } },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'genius_junior',
+    category: '사람',
+    emoji: '🧒',
+    title: '천재 신입이 들어왔어요',
+    text: '신입이 첫 주에 내 코드의 버그 다섯 개를 찾아서 PR을 올렸어요.',
+    weight: 5,
+    conditions: { minCareerYear: 4 },
+    choices: [
+      {
+        label: '제대로 키워 준다',
+        outcomes: [
+          { chance: 1, text: '멘토링하면서 나도 많이 배웠어요. 신입은 1년 만에 팀 에이스가 됐어요.', tone: 'skill', effects: { stats: { communication: 4, design: 2 } } },
+        ],
+      },
+      {
+        label: '경쟁심에 불타 공부한다',
+        outcomes: [
+          { chance: 1, text: '자존심 때문에 주말마다 공부했어요. 실력은 늘었는데 피곤해요.', effects: { stamina: -12, stats: { coding: 5 } } },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'code_review_war',
+    category: '사람',
+    emoji: '💬',
+    title: '코드리뷰 코멘트 147개',
+    text: '내 PR에 시니어가 코멘트 147개를 달았어요. 절반은 들여쓰기 취향이에요.',
+    weight: 7,
+    conditions: { maxCareerYear: 12 },
+    choices: [
+      {
+        label: '하나하나 다 반영한다',
+        outcomes: [
+          { chance: 1, text: '다 고쳤어요. 시니어의 취향을 완벽히 외우게 됐어요.', effects: { stamina: -8, stats: { coding: 3 } } },
+        ],
+      },
+      {
+        label: '린터 규칙으로 정리하자고 제안한다',
+        requires: { communication: 40 },
+        outcomes: [
+          { chance: 0.7, text: '팀 전체에 린터가 도입됐어요. 다들 고마워해요.', tone: 'skill', effects: { stats: { design: 2, reputation: 1 }, gradeBonus: 5 } },
+          { chance: 0.3, text: '시니어가 "내 리뷰가 불만이냐"며 삐졌어요.', tone: 'unlucky', effects: { gradeBonus: -5 } },
+        ],
+      },
+    ],
+  },
+
+  // ─── 커리어 ────────────────────────────────────────────
+  {
+    id: 'headhunter',
+    category: '커리어',
+    emoji: '📞',
+    title: '헤드헌터의 연락',
+    text: '링크드아웃으로 헤드헌터가 연락했어요. "연봉 30% 인상 가능한 포지션이 있어요."',
+    weight: 6,
+    conditions: { minCareerYear: 3 },
+    choices: [
+      {
+        label: '제안서를 들고 연봉 협상을 한다',
+        requires: { communication: 50 },
+        outcomes: [
+          { chance: 0.6, text: '회사가 카운터 오퍼로 연봉을 올려 줬어요.', tone: 'skill', effects: { salaryPct: 0.1 } },
+          { chance: 0.4, text: '"그럼 거기 가세요"라는 답이 돌아왔어요. 분위기가 어색해요.', tone: 'unlucky', effects: { gradeBonus: -10 } },
+        ],
+      },
+      {
+        label: '정중히 거절한다',
+        outcomes: [
+          { chance: 1, text: '헤드헌터가 "다음에 또 연락드릴게요"라고 했어요.', effects: { stats: { reputation: 1 } } },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'stock_vs_salary',
+    category: '커리어',
+    emoji: '📜',
+    title: '스톡옵션이냐 연봉이냐',
+    text: '대표가 연봉 협상 자리에서 "인상 대신 스톡옵션을 더 줄게요"라고 해요.',
+    weight: 7,
+    conditions: { companyTypes: [...STARTUPS] },
+    choices: [
+      {
+        label: '스톡옵션을 받는다',
+        outcomes: [
+          { chance: 0.3, text: '회사 가치가 올라 스톡옵션 일부를 팔았어요.', tone: 'lucky', effects: { assets: 8000 } },
+          { chance: 0.7, text: '종이 한 장을 받았어요. 언젠가는 돈이 되겠죠?', effects: {} },
+        ],
+      },
+      {
+        label: '현금이 최고다',
+        outcomes: [
+          { chance: 1, text: '연봉이 조금 올랐어요. 대표 표정이 조금 서운해 보여요.', effects: { salaryPct: 0.06, gradeBonus: -3 } },
+        ],
+      },
+    ],
+  },
+
+  // ─── 회사 ──────────────────────────────────────────────
+  {
+    id: 'layoff_rumor',
+    category: '회사',
+    emoji: '😰',
+    title: '구조조정 소문',
+    text: '블라인더에 "다음 달 개발 조직 30% 감축"이라는 글이 올라왔어요.',
+    weight: 5,
+    choices: [
+      {
+        label: '눈에 띄는 성과를 만든다',
+        outcomes: [
+          { chance: 1, text: '야근하며 성과를 쌓았어요. 소문은 소문으로 끝났어요.', effects: { stamina: -15, gradeBonus: 10 } },
+        ],
+      },
+      {
+        label: '조용히 이력서를 업데이트한다',
+        outcomes: [
+          { chance: 1, text: '이력서를 정리하다 보니 내가 뭘 했는지 돌아보게 됐어요.', effects: { stats: { reputation: 2 }, gradeBonus: -5 } },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'si_client_demand',
+    category: '회사',
+    emoji: '🤝',
+    title: '갑님의 요구사항',
+    text: '고객사 부장님이 "버튼 색이 마음에 안 드니 오늘 밤까지 시안 10개"를 요청했어요.',
+    weight: 9,
+    conditions: { industries: ['si_sm', 'public'] },
+    choices: [
+      {
+        label: '10개 다 만든다',
+        outcomes: [
+          { chance: 1, text: '부장님이 결국 첫 번째 시안을 골랐어요.', effects: { stamina: -15, stats: { domain: 2 }, gradeBonus: 5 } },
+        ],
+      },
+      {
+        label: '3개만 만들고 설득한다',
+        requires: { communication: 45 },
+        outcomes: [
+          { chance: 0.6, text: '"전문가 의견이 그렇다면야" 하며 넘어갔어요.', tone: 'skill', effects: { stats: { communication: 3 } } },
+          { chance: 0.4, text: '부장님이 우리 회사 대표에게 전화했어요.', tone: 'unlucky', effects: { gradeBonus: -15 } },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'game_crunch',
+    category: '회사',
+    emoji: '🎮',
+    title: '출시 전 크런치 모드',
+    text: '출시 6주 전, 회사가 "주 6일 근무 + 야식 제공"을 공지했어요.',
+    weight: 9,
+    conditions: { industries: ['game'] },
+    choices: [
+      {
+        label: '불태운다',
+        outcomes: [
+          { chance: 0.4, text: '게임이 대박 났어요! 성과급이 나왔어요.', tone: 'lucky', effects: { stamina: -25, assets: 3000, stats: { reputation: 3 }, gradeBonus: 10 } },
+          { chance: 0.6, text: '출시는 했는데 리뷰 평점이 2.1이에요.', tone: 'unlucky', effects: { stamina: -25, stats: { coding: 3 } } },
+        ],
+      },
+      {
+        label: '정시 퇴근을 지킨다',
+        outcomes: [
+          { chance: 1, text: '몸은 지켰지만 "팀워크가 부족하다"는 평가를 받았어요.', effects: { gradeBonus: -15 } },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'security_audit',
+    category: '회사',
+    emoji: '🔒',
+    title: '금융감독원 보안 감사',
+    text: '감사 기간이에요. 3년치 접근 로그와 개발 산출물을 내일까지 정리해야 해요.',
+    weight: 8,
+    conditions: { industries: ['fintech'] },
+    choices: [
+      {
+        label: '꼼꼼하게 정리한다',
+        outcomes: [
+          { chance: 1, text: '지적 사항 0건으로 끝났어요. 아무도 축하해 주지 않았지만요.', effects: { stamina: -12, stats: { domain: 4 } } },
+        ],
+      },
+      {
+        label: '자동화 스크립트를 짠다',
+        requires: { coding: 55 },
+        outcomes: [
+          { chance: 0.8, text: '다음 감사부터는 버튼 하나로 끝나요. 팀의 영웅이 됐어요.', tone: 'skill', effects: { stats: { coding: 2, reputation: 2 }, gradeBonus: 10 } },
+          { chance: 0.2, text: '스크립트가 로그 일부를 빼먹어서 지적을 받았어요.', tone: 'unlucky', effects: { gradeBonus: -10 } },
+        ],
+      },
+    ],
+  },
+
+  // ─── 업계 ──────────────────────────────────────────────
+  {
+    id: 'ai_replaces_me',
+    category: '업계',
+    emoji: '🤖',
+    title: 'AI가 내 업무를 대신해요',
+    text: '회사가 AI 코딩 에이전트를 도입했어요. 내가 하던 CRUD 작업을 AI가 10분 만에 끝내요.',
+    weight: 8,
+    conditions: { minCalendarYear: 2028 },
+    choices: [
+      {
+        label: 'AI를 부리는 사람이 된다',
+        outcomes: [
+          { chance: 1, text: 'AI에게 맡기고 나는 설계와 리뷰에 집중했어요.', tone: 'skill', effects: { stats: { design: 4, coding: -2 }, gradeBonus: 5 } },
+        ],
+      },
+      {
+        label: '손코딩의 가치를 믿는다',
+        outcomes: [
+          { chance: 0.3, text: 'AI가 만든 버그를 내가 잡았어요. 장인 정신이 빛났어요.', tone: 'lucky', effects: { stats: { coding: 3 } } },
+          { chance: 0.7, text: '내 생산성이 팀 꼴찌가 됐어요.', tone: 'unlucky', effects: { gradeBonus: -15 } },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'msa_hype',
+    category: '업계',
+    emoji: '🧱',
+    title: '전사 마이크로서비스 전환',
+    text: 'CTO가 컨퍼런스를 다녀오더니 모놀리스를 서비스 40개로 쪼개자고 해요.',
+    weight: 6,
+    conditions: { minCareerYear: 3 },
+    choices: [
+      {
+        label: '전환 TF에 자원한다',
+        outcomes: [
+          { chance: 0.5, text: '성공적으로 쪼갰어요. 이력서에 쓸 줄이 생겼어요.', tone: 'lucky', effects: { stamina: -15, stats: { design: 5, reputation: 2 } } },
+          { chance: 0.5, text: '분산 모놀리스가 탄생했어요. 장애가 40배가 됐어요.', tone: 'unlucky', effects: { stamina: -20, stats: { design: 4 }, counters: { incidents: 1 } } },
+        ],
+      },
+      {
+        label: '"우리 규모엔 과해요"라고 말한다',
+        requires: { design: 55, communication: 45 },
+        outcomes: [
+          { chance: 0.6, text: 'CTO가 설득됐어요. 1년 뒤 다른 회사의 실패 사례를 보며 안도했어요.', tone: 'skill', effects: { stats: { reputation: 2 }, gradeBonus: 10 } },
+          { chance: 0.4, text: '"변화를 두려워하는 사람"으로 찍혔어요.', tone: 'unlucky', effects: { gradeBonus: -10 } },
+        ],
+      },
+    ],
+  },
+
+  // ─── 개인 ──────────────────────────────────────────────
+  {
+    id: 'blog_viral',
+    category: '개인',
+    emoji: '✍️',
+    title: '기술 블로그가 터졌어요',
+    text: '삽질 기록을 정리한 글이 개발자 커뮤니티 메인에 올라갔어요.',
+    weight: 5,
+    choices: [
+      {
+        label: '시리즈로 연재한다',
+        outcomes: [
+          { chance: 1, text: '구독자가 늘고 컨퍼런스 연락도 왔어요.', tone: 'skill', effects: { stamina: -8, stats: { reputation: 5, communication: 2 } } },
+        ],
+      },
+      {
+        label: '한 번의 행운으로 남긴다',
+        outcomes: [
+          { chance: 1, text: '댓글 몇 개에 뿌듯해하고 끝냈어요.', effects: { stats: { reputation: 2 } } },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'opensource_pr',
+    category: '개인',
+    emoji: '🐙',
+    title: '유명 오픈소스에 PR',
+    text: '자주 쓰던 라이브러리에서 버그를 발견했어요. 메인테이너는 무섭기로 유명해요.',
+    weight: 5,
+    choices: [
+      {
+        label: '테스트까지 붙여서 PR을 올린다',
+        requires: { coding: 55 },
+        outcomes: [
+          { chance: 0.6, text: 'PR이 머지됐어요! 컨트리뷰터 목록에 내 이름이 올라갔어요.', tone: 'skill', effects: { stats: { reputation: 5, coding: 2 } } },
+          { chance: 0.4, text: '"이건 의도된 동작입니다"라는 한 줄과 함께 닫혔어요.', tone: 'unlucky', effects: { stats: { coding: 2 } } },
+        ],
+      },
+      {
+        label: '이슈만 남긴다',
+        outcomes: [
+          { chance: 1, text: '다른 사람이 내 이슈를 보고 고쳤어요. 이슈에 👍 32개.', effects: { stats: { reputation: 1 } } },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'conference_talk',
+    category: '개인',
+    emoji: '🎤',
+    title: '컨퍼런스 발표 제안',
+    text: '개발자 컨퍼런스에서 30분 발표를 해 달라는 연락이 왔어요. 청중은 800명이에요.',
+    weight: 5,
+    conditions: { minCareerYear: 4 },
+    choices: [
+      {
+        label: '수락한다',
+        outcomes: [
+          { chance: 0.7, text: '발표 영상 조회수가 2만을 넘었어요.', tone: 'skill', effects: { stamina: -10, stats: { reputation: 6, communication: 3 } } },
+          { chance: 0.3, text: '긴장해서 데모가 멈췄어요. 그래도 끝까지 해냈어요.', tone: 'unlucky', effects: { stamina: -15, stats: { reputation: 2, communication: 4 } } },
+        ],
+      },
+      {
+        label: '바쁘다며 거절한다',
+        outcomes: [
+          { chance: 1, text: '대신 나간 동기가 업계 스타가 됐어요.', effects: {} },
+        ],
+      },
+    ],
+  },
+
+  // ─── 생활 ──────────────────────────────────────────────
+  {
+    id: 'marriage',
+    category: '생활',
+    emoji: '💍',
+    title: '결혼',
+    text: '오래 만난 사람과 결혼 이야기가 나왔어요.',
+    weight: 6,
+    once: true,
+    conditions: { minAge: 28, maxAge: 42, notFlags: ['married'] },
+    choices: [
+      {
+        label: '결혼한다',
+        outcomes: [
+          { chance: 1, text: '결혼했어요! 축의금 정산은 아직 못 했어요.', effects: { assets: -3000, stamina: 10, setFlags: ['married'] } },
+        ],
+      },
+      {
+        label: '커리어가 먼저다',
+        outcomes: [
+          { chance: 1, text: '일에 집중하기로 했어요. 명절이 조금 길게 느껴져요.', effects: { gradeBonus: 5 } },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'baby',
+    category: '생활',
+    emoji: '👶',
+    title: '아기가 태어났어요',
+    text: '가족이 한 명 늘었어요. 육아휴직을 쓸지 고민돼요.',
+    weight: 8,
+    once: true,
+    conditions: { flags: ['married'], notFlags: ['hasChild'], maxAge: 45 },
+    choices: [
+      {
+        label: '육아휴직을 쓴다',
+        outcomes: [
+          { chance: 1, text: '아이의 첫 걸음마를 직접 봤어요. 복귀하니 코드베이스가 낯설어요.', effects: { stamina: 25, gradeBonus: -25, setFlags: ['hasChild'], achievement: 'parental_leave' } },
+        ],
+      },
+      {
+        label: '계속 일한다',
+        outcomes: [
+          { chance: 1, text: '퇴근하면 육아 2교대가 시작돼요.', effects: { stamina: -20, setFlags: ['hasChild'] } },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'mortgage',
+    category: '생활',
+    emoji: '🏠',
+    title: '내 집 마련',
+    text: '부동산 앱을 보다가 "지금 아니면 못 산다"는 생각이 들었어요.',
+    weight: 5,
+    once: true,
+    conditions: { minAge: 32, notFlags: ['mortgage'] },
+    choices: [
+      {
+        label: '영끌해서 산다',
+        outcomes: [
+          { chance: 0.5, text: '집값이 올랐어요! 대출 이자는 여전히 무서워요.', tone: 'lucky', effects: { assets: 10000, setFlags: ['mortgage'] } },
+          { chance: 0.5, text: '사자마자 금리가 올랐어요. 월급의 절반이 이자예요.', tone: 'unlucky', effects: { assets: -5000, stamina: -10, setFlags: ['mortgage'] } },
+        ],
+      },
+      {
+        label: '전세로 버틴다',
+        outcomes: [
+          { chance: 1, text: '2년마다 이사 걱정을 하지만 마음은 가벼워요.', effects: {} },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'parent_sick',
+    category: '생활',
+    emoji: '🏥',
+    title: '부모님이 편찮으세요',
+    text: '부모님이 입원하셨어요. 병원과 회사를 오가야 해요.',
+    weight: 4,
+    once: true,
+    conditions: { minAge: 35 },
+    choices: [
+      {
+        label: '휴직하고 곁을 지킨다',
+        outcomes: [
+          { chance: 1, text: '부모님이 회복하셨어요. 그 시간을 후회하지 않아요.', effects: { gradeBonus: -20, assets: -2000 } },
+        ],
+      },
+      {
+        label: '일과 병행한다',
+        outcomes: [
+          { chance: 1, text: '퇴근 후 병원으로 가는 1년을 보냈어요.', effects: { stamina: -25, assets: -2000 } },
         ],
       },
     ],

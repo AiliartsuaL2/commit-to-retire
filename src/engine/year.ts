@@ -196,7 +196,7 @@ export function acknowledgeYear(state: GameState): GameState {
 
 // ─── 연말 세부 규칙 ────────────────────────────────────
 
-const BASE_GROWTH: Stats = { coding: 4, design: 3, communication: 2.5, domain: 3, reputation: 0.8 }
+const BASE_GROWTH: Stats = { coding: 3, design: 2.2, communication: 1.8, domain: 2.2, reputation: 0.4 }
 
 function growStats(s: GameState, rng: Rng): void {
   const company = companyTypeById[s.company.type]
