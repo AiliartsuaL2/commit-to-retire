@@ -14,3 +14,8 @@
 - `npm run dev` 개발 서버
 - `npm test` 엔진 테스트 (Vitest)
 - `npm run build` 타입 체크 + 빌드
+- `npm run balance` 봇 1,800판 자동 플레이 → 직책·엔딩·연봉 분포 리포트. 수치를 바꾸면 돌려서 확인한다
+
+## 엔진 흐름
+`createGame` → (`startYear` → `chooseEventOption`* → `finishYear` → `acknowledgeYear` → 허브: `acceptOffer`/`declineOffers`/`chooseTrack`/`nextYear`/`retireNow`) 반복 → `retired`.
+모든 함수는 상태를 복사해 새 상태를 돌려준다. 밸런스 규칙은 `src/engine/year.ts`·`rules.ts`, 수치는 `src/data/`.

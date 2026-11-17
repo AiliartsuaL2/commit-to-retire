@@ -236,7 +236,7 @@ export interface FeedTemplate {
 }
 
 export type FeedTrigger =
-  | 'promoted' | 'jobChanged' | 'burnout' | 'companyClosed' | 'exit' | 'incident' | 'raise'
+  | 'promoted' | 'jobChanged' | 'burnout' | 'companyClosed' | 'layoff' | 'exit' | 'incident'
 
 export interface FeedPost {
   platform: FeedPlatform
@@ -331,16 +331,26 @@ export interface GameState {
   assets: number
 
   rank: RankId
+  /** 지금까지 오른 가장 높은 직책 (엔딩 명성 계산용) */
+  bestRank: RankId
+  /** 리드 이후 갈 트랙. 리드 도달 후 허브에서 고른다 */
+  preferredTrack: 'manager' | 'ic' | null
   company: Company
   yearsAtCompany: number
   yearsAtRank: number
+  /** 회사가 망하거나 권고사직 → 이직 제안 중 하나를 골라야 다음 해로 갈 수 있다 */
+  unemployed: boolean
 
   /** 올해 선택한 집중 */
   focus: FocusId | null
   /** 올해 남은 이벤트 */
   pendingEvents: string[]
+  /** 올해 고른 이벤트 기록 */
+  yearEvents: EventLogEntry[]
   /** 올해 고과에 더해질 점수 */
   gradeBonus: number
+  /** 연초 시점 스냅샷 (연말 결과 화면의 변화량 계산용) */
+  yearStart: { stats: Stats; salary: number }
 
   offers: JobOffer[]
   flags: Flag[]

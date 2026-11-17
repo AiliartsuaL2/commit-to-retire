@@ -12,7 +12,7 @@ export const companyTypes: CompanyTypeDef[] = [
     overtime: 2,
     risk: 0.01,
     promotionSpeed: 0.8,
-    hiringBar: 70,
+    hiringBar: 58,
     names: ['삼선전자', '엘쥐전자', '에쓰케이텔레콤', '현다이자동차'],
   },
   {
@@ -25,7 +25,7 @@ export const companyTypes: CompanyTypeDef[] = [
     overtime: 3,
     risk: 0.03,
     promotionSpeed: 0.8,
-    hiringBar: 60,
+    hiringBar: 48,
     names: ['삼선에스디에쓰', '엘쥐씨엔에스', '에쓰케이씨앤씨', '현다이오토에버'],
   },
   {
@@ -38,7 +38,7 @@ export const companyTypes: CompanyTypeDef[] = [
     overtime: 2,
     risk: 0.03,
     promotionSpeed: 1.0,
-    hiringBar: 80,
+    hiringBar: 63,
     names: ['네모버', '까까오', '쿠팽', '토스트', '배달의민속', '양파마켓'],
   },
   {
@@ -51,7 +51,7 @@ export const companyTypes: CompanyTypeDef[] = [
     overtime: 1,
     risk: 0.08,
     promotionSpeed: 1.0,
-    hiringBar: 80,
+    hiringBar: 66,
     names: ['구글리 코리아', '아마존강 코리아', '마이크로하드 코리아', '메타버스 코리아'],
   },
   {
@@ -64,7 +64,7 @@ export const companyTypes: CompanyTypeDef[] = [
     overtime: 2,
     risk: 0.03,
     promotionSpeed: 1.0,
-    hiringBar: 45,
+    hiringBar: 35,
     names: ['한결정보', '대명시스템', '우성테크', '신화네트웍스'],
   },
   {
@@ -77,7 +77,7 @@ export const companyTypes: CompanyTypeDef[] = [
     overtime: 4,
     risk: 0.08,
     promotionSpeed: 1.2,
-    hiringBar: 25,
+    hiringBar: 15,
     names: ['(주)솔루션원', '다온아이티', '미래정보기술', '한빛소프트웨어'],
   },
   {
@@ -90,7 +90,7 @@ export const companyTypes: CompanyTypeDef[] = [
     overtime: 4,
     risk: 0.15,
     promotionSpeed: 1.2,
-    hiringBar: 20,
+    hiringBar: 10,
     names: ['픽셀앤코드', '스튜디오 런치', '웹공방', '앱팩토리'],
   },
   {
@@ -103,7 +103,7 @@ export const companyTypes: CompanyTypeDef[] = [
     overtime: 3,
     risk: 0.25,
     promotionSpeed: 1.5,
-    hiringBar: 30,
+    hiringBar: 25,
     names: ['주식회사 무언가', '블루밍랩스', '퀵스타트', '포텐셜'],
   },
   {
@@ -116,7 +116,7 @@ export const companyTypes: CompanyTypeDef[] = [
     overtime: 3,
     risk: 0.15,
     promotionSpeed: 1.2,
-    hiringBar: 50,
+    hiringBar: 40,
     names: ['그로스핏', '데일리업', '스케일웨이', '넥스트스텝'],
   },
   {
@@ -129,7 +129,7 @@ export const companyTypes: CompanyTypeDef[] = [
     overtime: 2,
     risk: 0.08,
     promotionSpeed: 1.0,
-    hiringBar: 70,
+    hiringBar: 55,
     names: ['무신상', '야높자', '마켓쿨리', '직반'],
   },
   {
@@ -142,7 +142,7 @@ export const companyTypes: CompanyTypeDef[] = [
     overtime: 1,
     risk: 0.01,
     promotionSpeed: 0.9,
-    hiringBar: 65,
+    hiringBar: 55,
     names: ['국밍은행', '신한은행권', '한국정보화공단', '코레일테크'],
   },
 ]

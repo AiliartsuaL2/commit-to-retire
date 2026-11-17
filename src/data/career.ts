@@ -5,18 +5,18 @@ export const ranks: RankDef[] = [
   { id: 'junior', label: '주니어', track: 'common', minYears: 1, minStats: { coding: 40 }, from: 'newbie', salaryBump: 0.05, fameScore: 5 },
   { id: 'mid', label: '미들', track: 'common', minYears: 4, minStats: { coding: 55 }, from: 'junior', salaryBump: 0.06, fameScore: 10 },
   { id: 'senior', label: '시니어', track: 'common', minYears: 7, minStats: { coding: 65, design: 55 }, from: 'mid', salaryBump: 0.08, fameScore: 20 },
-  { id: 'lead', label: '테크리드', track: 'common', minYears: 10, minStats: { design: 65, communication: 55 }, from: 'senior', salaryBump: 0.1, fameScore: 30 },
+  { id: 'lead', label: '테크리드', track: 'common', minYears: 10, minStats: { design: 70, communication: 60 }, from: 'senior', salaryBump: 0.1, fameScore: 30 },
 
   // 매니저 트랙
-  { id: 'em', label: '엔지니어링 매니저', track: 'manager', minYears: 12, minStats: { communication: 70 }, from: 'lead', salaryBump: 0.1, fameScore: 40 },
-  { id: 'director', label: '디렉터', track: 'manager', minYears: 15, minStats: { communication: 80, domain: 70 }, from: 'em', salaryBump: 0.12, fameScore: 55 },
-  { id: 'vp', label: 'VP of Engineering', track: 'manager', minYears: 18, minStats: { communication: 85, domain: 80, reputation: 60 }, from: 'director', salaryBump: 0.15, fameScore: 70 },
-  { id: 'cto', label: 'CTO', track: 'manager', minYears: 20, minStats: { design: 85, communication: 90, reputation: 75 }, from: 'vp', salaryBump: 0.2, fameScore: 85 },
+  { id: 'em', label: '엔지니어링 매니저', track: 'manager', minYears: 13, minStats: { communication: 78, domain: 65 }, from: 'lead', salaryBump: 0.1, fameScore: 40 },
+  { id: 'director', label: '디렉터', track: 'manager', minYears: 16, minStats: { communication: 86, domain: 78, reputation: 45 }, from: 'em', salaryBump: 0.12, fameScore: 55 },
+  { id: 'vp', label: 'VP of Engineering', track: 'manager', minYears: 19, minStats: { communication: 90, domain: 85, reputation: 65 }, from: 'director', salaryBump: 0.15, fameScore: 70 },
+  { id: 'cto', label: 'CTO', track: 'manager', minYears: 22, minStats: { design: 88, communication: 93, reputation: 80 }, from: 'vp', salaryBump: 0.2, fameScore: 85 },
 
   // IC 트랙
-  { id: 'staff', label: '스태프 엔지니어', track: 'ic', minYears: 12, minStats: { design: 75, coding: 75 }, from: 'lead', salaryBump: 0.1, fameScore: 40 },
-  { id: 'principal', label: '프린시펄 엔지니어', track: 'ic', minYears: 15, minStats: { design: 85, coding: 80, reputation: 55 }, from: 'staff', salaryBump: 0.12, fameScore: 55 },
-  { id: 'fellow', label: '펠로우', track: 'ic', minYears: 20, minStats: { design: 92, coding: 85, reputation: 80 }, from: 'principal', salaryBump: 0.2, fameScore: 75 },
+  { id: 'staff', label: '스태프 엔지니어', track: 'ic', minYears: 13, minStats: { design: 80, coding: 78 }, from: 'lead', salaryBump: 0.1, fameScore: 40 },
+  { id: 'principal', label: '프린시펄 엔지니어', track: 'ic', minYears: 16, minStats: { design: 88, coding: 82, reputation: 50 }, from: 'staff', salaryBump: 0.12, fameScore: 55 },
+  { id: 'fellow', label: '펠로우', track: 'ic', minYears: 21, minStats: { design: 94, coding: 88, reputation: 80 }, from: 'principal', salaryBump: 0.2, fameScore: 75 },
 ]
 
 export const focuses: FocusDef[] = [
@@ -94,9 +94,9 @@ export const gradeThresholds: { grade: Grade; minScore: number; raise: number }[
 
 /** 명성 점수 → 엔딩 등급 */
 export const fameGrades: { grade: FameGrade; minScore: number; title: string }[] = [
-  { grade: 'S', minScore: 150, title: '한국 IT의 전설' },
-  { grade: 'A', minScore: 110, title: '업계가 아는 이름' },
-  { grade: 'B', minScore: 70, title: '믿고 맡기는 시니어' },
+  { grade: 'S', minScore: 130, title: '한국 IT의 전설' },
+  { grade: 'A', minScore: 95, title: '업계가 아는 이름' },
+  { grade: 'B', minScore: 65, title: '믿고 맡기는 시니어' },
   { grade: 'C', minScore: 35, title: '무난한 월급쟁이' },
   { grade: 'D', minScore: -Infinity, title: '치킨집 사장님' },
 ]
