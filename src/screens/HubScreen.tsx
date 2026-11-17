@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react'
-import { companyTypeById, industryById, rankById } from '../data'
+import { companyTypeById, industryById, rankById, statLabels } from '../data'
 import {
   canChooseTrack,
   canSpendGapYear,
   formatSalary,
   HIRING_STAGES,
+  nextPromotion,
   STAGE_LABELS,
   type ApplicationResult,
   type GameState,
   type JobOffer,
   type JobPosting,
+  type PromotionTarget,
+  type StatKey,
 } from '../engine'
 import { useGame } from '../store/game'
 import { Badge, Button, Card, Screen, StatBars, StatusHeader, Title } from '../ui'
@@ -66,6 +69,8 @@ export function HubScreen({ game }: { game: GameState }) {
           </div>
         </Card>
       )}
+
+      {!game.unemployed && <PromotionCard game={game} />}
 
       {game.offers.length > 0 && (
         <section className="flex flex-col gap-2">
@@ -131,6 +136,71 @@ export function HubScreen({ game }: { game: GameState }) {
 
       {lastApplication && <ApplicationSheet result={lastApplication} onClose={dismissApplication} />}
     </Screen>
+  )
+}
+
+/** 다음 직급으로 올라가려면 무엇이 필요한지 */
+function PromotionCard({ game }: { game: GameState }) {
+  const needsTrack = game.rank === 'lead' && game.preferredTrack === null
+  const targets = needsTrack
+    ? [nextPromotion(game, 'manager'), nextPromotion(game, 'ic')].filter((t): t is PromotionTarget => t !== null)
+    : [nextPromotion(game)].filter((t): t is PromotionTarget => t !== null)
+
+  if (targets.length === 0) {
+    return (
+      <Card>
+        <p className="font-semibold">🏁 더 오를 직급이 없어요</p>
+        <p className="text-sm text-gray-500">이제 명성은 평판과 업적으로 쌓여요.</p>
+      </Card>
+    )
+  }
+
+  return (
+    <Card className="flex flex-col gap-3">
+      <p className="text-sm font-medium text-gray-600">🎯 다음 승진 조건</p>
+      {targets.map((t) => (
+        <PromotionRequirements key={t.rank.id} game={game} target={t} />
+      ))}
+      <p className="text-xs text-gray-400">
+        조건을 다 채운 해에 고과가 B 이상이면 승진할 수 있어요. '쉬어가기'와 '이직 준비'를 고른 해에는 심사가 없어요.
+      </p>
+    </Card>
+  )
+}
+
+function PromotionRequirements({ game, target }: { game: GameState; target: PromotionTarget }) {
+  const rows = [
+    { label: '경력', have: game.careerYear, need: target.minCareerYear, unit: '년차' },
+    ...(Object.entries(target.rank.minStats) as [StatKey, number][]).map(([key, need]) => ({
+      label: statLabels[key],
+      have: game.stats[key],
+      need,
+      unit: '',
+    })),
+  ]
+  const ready = rows.every((r) => r.have >= r.need)
+  return (
+    <div className="rounded-2xl bg-white p-3">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <p className="font-semibold">{target.rank.label}</p>
+        {ready ? <Badge tone="green">조건 충족</Badge> : <Badge>준비 중</Badge>}
+      </div>
+      <div className="flex flex-col gap-1 text-sm">
+        {rows.map((r) => {
+          const ok = r.have >= r.need
+          return (
+            <div key={r.label} className="flex items-center justify-between gap-2">
+              <span className="text-gray-500">{r.label}</span>
+              <span className={`tabular-nums ${ok ? 'text-emerald-600' : 'font-semibold text-red-500'}`}>
+                {r.have}
+                {r.unit} / {r.need}
+                {r.unit} {ok ? '✓' : `(${r.need - r.have} 부족)`}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
   )
 }
 
