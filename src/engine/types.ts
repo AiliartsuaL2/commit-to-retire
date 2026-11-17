@@ -240,10 +240,17 @@ export interface FeedTemplate {
     companyTypes?: CompanyTypeId[]
     industries?: IndustryId[]
     ranks?: RankId[]
+    /** 올해 고른 집중 */
+    focus?: FocusId[]
     /** 올해 이런 일이 있었을 때 */
     triggers?: FeedTrigger[]
+    /** 작년이 실직 공백기였을 때 (공백기 끝에 다시 취업한 첫해) */
+    afterGapYear?: boolean
   }
-  /** {name} {company} {salary} {rank} 치환 */
+  /**
+   * {name} {company} {salary} {rank} 치환.
+   * 뒤에 (이)가 · (은)는 · (을)를 · (와)과 · (으)로 를 붙여 쓰면 받침에 맞는 조사로 바뀐다
+   */
   texts: string[]
 }
 
@@ -391,6 +398,8 @@ export interface GameState {
   yearStart: { stats: Stats; salary: number }
 
   offers: JobOffer[]
+  /** 허브에서 생겨 다음 해 연말 피드에 반영할 사건 (이직). 예전 세이브에는 없을 수 있다 */
+  pendingFeedTriggers?: FeedTrigger[]
   /** 이번 허브의 채용 공고. 예전 세이브에는 없을 수 있다 */
   postings?: JobPosting[]
   /** 이번 허브에서 남은 지원 횟수 */

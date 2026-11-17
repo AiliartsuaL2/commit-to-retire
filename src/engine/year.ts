@@ -143,7 +143,9 @@ export function finishYear(state: GameState): GameState {
   const s = structuredClone(state)
   s.pendingEvents = []
   const rng = createRng(s.rngState)
-  const triggers: FeedTrigger[] = []
+  // 작년 허브에서 넘어온 사건(이직)을 올해 피드에 반영하고 비운다
+  const triggers: FeedTrigger[] = [...(s.pendingFeedTriggers ?? [])]
+  delete s.pendingFeedTriggers
   const rankBefore = s.rank
 
   if (s.yearEvents.some((e) => eventById[e.eventId]?.category === '장애')) triggers.push('incident')

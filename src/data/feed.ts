@@ -12,7 +12,8 @@ const EARLY_RANKS: RankId[] = ['newbie', 'junior']
 const SENIOR_UP: RankId[] = ['senior', 'lead', 'em', 'director', 'vp', 'cto', 'staff', 'principal', 'fellow']
 
 // 연말 커뮤니티 반응 템플릿. 게임 속 게시글이라 화면 문구(해요체)와 달리 커뮤니티 말투를 쓴다.
-// 조건이 많을수록 뽑힐 가중치가 높다 (engine/feed.ts). jobChanged 트리거는 아직 엔진에서 나오지 않는다.
+// 조건이 많을수록 뽑힐 가중치가 높다 (engine/feed.ts). 올해 사건(triggers)이 있으면 그에 맞는 글이 최소 하나 나온다.
+// 치환어 뒤 조사는 {rank}(으)로, {company}(이)가, {name}(은)는, {company}(와)과 처럼 쓰면 받침에 맞게 바뀐다.
 export const feedTemplates: FeedTemplate[] = [
   // ─── 조건 없음 (언제나 나올 수 있다) ─────────────────────
   {
@@ -125,7 +126,7 @@ export const feedTemplates: FeedTemplate[] = [
     conditions: { triggers: ['promoted'] },
     texts: [
       '{company}에서 {rank} 직책으로 새로운 여정을 시작합니다. 함께해 주신 모든 분께 감사드립니다 🙏 #성장 #도전',
-      '승진 소식을 전합니다. 이제 {company}의 {rank}입니다. 연봉이 {salary}라는 건 굳이 적지 않겠습니다 #감사',
+      '승진 소식을 전합니다. 이제 {company}의 {rank}입니다. 연봉이 {salary}(이)라는 건 굳이 적지 않겠습니다 #감사',
     ],
   },
   {
@@ -211,6 +212,133 @@ export const feedTemplates: FeedTemplate[] = [
     platform: 'okko',
     conditions: { triggers: ['incident'] },
     texts: ['장애 회고 문서에 원인을 "휴먼 에러"라고만 적으면 안 되나요? 그 휴먼이 접니다'],
+  },
+
+  // ─── 이직 (허브에서 이직한 다음 해에 나온다) ───────────────
+  {
+    id: 'linkedout_job_changed',
+    platform: 'linkedout',
+    conditions: { triggers: ['jobChanged'] },
+    texts: [
+      '{company}에서 {rank}(으)로 함께한 지 1년이 됐습니다. 전 직장 단톡방은 조용히 나왔습니다 #새출발 #이직',
+      '{company}(으)로 옮긴 지 1년. 새로운 문화(라고 쓰고 새로운 메신저 이모지라고 읽습니다)에 적응했습니다 #온보딩 #감사',
+    ],
+  },
+  {
+    id: 'blinder_job_changed',
+    platform: 'blinder',
+    conditions: { triggers: ['jobChanged'] },
+    texts: [
+      '{company}(으)로 이직한 지 1년인데 전 회사가 그리워짐. 이거 스톡홀름 증후군임?',
+      '이직해서 연봉 {salary} 됐는데 일도 두 배 됨. {company}(아)야 이게 맞냐',
+    ],
+  },
+  {
+    id: 'blinder_job_changed_newcomer',
+    platform: 'blinder',
+    conditions: { triggers: ['jobChanged'] },
+    texts: ['이번에 {company} 경력으로 온 {name}(이)가 누구임? {rank}(이)라던데 벌써 레거시 보고 한숨 쉬는 거 봄'],
+  },
+  {
+    id: 'blinder_job_changed_senior',
+    platform: 'blinder',
+    conditions: { triggers: ['jobChanged'], ranks: SENIOR_UP },
+    texts: ['{company}에 {rank}(으)로 경력 입사함. 첫날부터 "이거 원래 어떻게 해요?" 질문받는데 나도 어제 옴'],
+  },
+  {
+    id: 'okko_job_changed',
+    platform: 'okko',
+    conditions: { triggers: ['jobChanged'] },
+    texts: [
+      '이직한 회사 레거시가 전 회사보다 심합니다. 이력서에 "레거시 전문가"라고 써도 될까요?',
+      '{company} 온보딩 문서가 3년 전에 멈춰 있습니다. 제가 고치면 제가 담당자 되는 거죠? (답변: 네)',
+    ],
+  },
+  {
+    id: 'jobplanet_job_changed',
+    platform: 'jobplanet',
+    conditions: { triggers: ['jobChanged'] },
+    texts: [
+      '★★★★☆ {company}: 입사 1년차 후기. 면접 때 들은 "자율 출퇴근"은 실존함. 퇴근이 자율이 아닐 뿐.',
+      '★★★☆☆ {company}: 전 회사보다는 나음. 참고로 전 회사는 기준이 많이 낮았음.',
+    ],
+  },
+  {
+    id: 'github_job_changed',
+    platform: 'github',
+    conditions: { triggers: ['jobChanged'] },
+    texts: [
+      'Issue: README에 "자세한 건 김 책임님께 문의"라고만 적혀 있습니다 · 댓글: 그분 퇴사하신 지 2년 됐습니다',
+      'PR #1 "{name}의 첫 커밋" · 변경: .gitignore 한 줄 · 승인 5명, 리뷰 코멘트 0개',
+    ],
+  },
+  {
+    id: 'okko_comeback',
+    platform: 'okko',
+    conditions: { triggers: ['jobChanged'], afterGapYear: true },
+    texts: ['공백기 끝에 {company} 들어온 지 1년 됐습니다. 면접에서 공백기에 뭐 했냐길래 "자기계발"이라고 했는데 사실 자기만 했습니다'],
+  },
+  {
+    id: 'linkedout_comeback',
+    platform: 'linkedout',
+    conditions: { triggers: ['jobChanged'], afterGapYear: true },
+    texts: ['공백기는 저를 돌아보는 시간이었습니다. {company}에서 다시 달린 1년, 통장이 먼저 저를 돌아봐 줬습니다 #재취업 #공백기는성장기'],
+  },
+
+  // ─── 올해의 집중 ─────────────────────────────────────────
+  {
+    id: 'blinder_focus_job_hunt',
+    platform: 'blinder',
+    conditions: { focus: ['job_hunt'] },
+    texts: [
+      '{company} 다니면서 몰래 이직 준비 중인데 팀장이 내 링크드아웃 프로필 조회함. 끝났다',
+      '연차 쓰고 면접 보러 갔는데 대기실에 {company} 팀장님 앉아 계심. 서로 못 본 걸로 함',
+    ],
+  },
+  {
+    id: 'okko_focus_job_hunt',
+    platform: 'okko',
+    conditions: { focus: ['job_hunt'] },
+    texts: ['코딩테스트 준비로 1년 내내 알고리즘만 풀었습니다. 실무에서 그래프 탐색 쓸 일은 언제 오나요? (답변: 안 옵니다)'],
+  },
+  {
+    id: 'blinder_focus_rest',
+    platform: 'blinder',
+    conditions: { focus: ['rest'] },
+    texts: ['올해 목표가 숨쉬기였는데 달성함. {company}에서 존재감 지우기 성공. 정시 퇴근 1년 개근'],
+  },
+  {
+    id: 'github_focus_side_project',
+    platform: 'github',
+    conditions: { focus: ['side_project'] },
+    texts: [
+      'Repo: 퇴근 후 만든 사이드 프로젝트 · Star 2개 (본인, 엄마)',
+      'Issue #1: 이거 어디에 쓰는 건가요? · 작성자: 만든 사람 본인 (6개월 후)',
+    ],
+  },
+  {
+    id: 'linkedout_focus_side_project',
+    platform: 'linkedout',
+    conditions: { focus: ['side_project'] },
+    texts: ['퇴근 후 만든 서비스를 런칭했습니다! 현재 사용자는 저 포함 3명입니다. 시작이 반입니다 #사이드프로젝트 #창업각'],
+  },
+  {
+    id: 'okko_focus_study',
+    platform: 'okko',
+    conditions: { focus: ['study'] },
+    texts: ['올해 온라인 강의 12개 결제하고 1개 완강했습니다. 이 정도면 상위권인가요?'],
+  },
+  {
+    id: 'linkedout_focus_networking',
+    platform: 'linkedout',
+    conditions: { focus: ['networking'] },
+    texts: ['올해 컨퍼런스 발표만 세 번. 슬라이드 첫 장은 늘 같았습니다: "{company} {rank} {name}입니다" #발표 #네트워킹'],
+  },
+  {
+    id: 'blinder_focus_all_in',
+    platform: 'blinder',
+    conditions: { focus: ['all_in'] },
+    texts: ['올해 {company}에 영혼 갈아 넣었는데 남은 건 메신저 상태 메시지 "바쁨" 하나'],
   },
 
   // ─── 회사 유형 ──────────────────────────────────────────

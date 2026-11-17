@@ -34,6 +34,10 @@ export function acceptOffer(state: GameState, index: number): GameState {
   s.postings = []
   s.applicationsLeft = 0
   s.counters.jobChanges += 1
+  // 이직은 그해 연말 피드가 만들어진 뒤에 일어나므로 다음 해 피드로 넘긴다
+  if (!s.pendingFeedTriggers?.includes('jobChanged')) {
+    s.pendingFeedTriggers = [...(s.pendingFeedTriggers ?? []), 'jobChanged']
+  }
   return s
 }
 
