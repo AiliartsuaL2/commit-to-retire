@@ -4,7 +4,8 @@ import { acceptOffer, nextYear } from './hub'
 import { createRng } from './rng'
 import { createGame, firstJobOptions, startingStats } from './setup'
 import type { GameState, Profile } from './types'
-import { acknowledgeYear, checkFailMultiplier, chooseEventOption, finishYear, startYear } from './year'
+import { events } from '../data'
+import { acknowledgeYear, checkFailMultiplier, chooseEventOption, finishYear, isEligible, startYear } from './year'
 
 /** 선택지는 언제나 고를 수 있으니 첫 번째를 고른다 */
 const freeChoice = (_s: GameState) => 0
@@ -114,6 +115,21 @@ describe('1년 진행', () => {
     s = acceptOffer(s, 0)
     expect(s.unemployed).toBe(false)
     expect(nextYear(s).phase).toBe('year_start')
+  })
+})
+
+describe('이벤트 조건', () => {
+  const onboarding = events.find((e) => e.id === 'onboarding_reality')!
+  const base = () => createGame({ profile, companyType: 'sme_si', industry: 'si_sm', seed: 1 })
+
+  it('온보딩 현실 자각은 신입 첫 회사에서는 안 나온다', () => {
+    expect(isEligible(onboarding, base())).toBe(false)
+  })
+
+  it('이직한 첫해에는 나오고, 2년차부터는 안 나온다', () => {
+    const moved = { ...base(), counters: { ...base().counters, jobChanges: 1 } }
+    expect(isEligible(onboarding, moved)).toBe(true)
+    expect(isEligible(onboarding, { ...moved, yearsAtCompany: 1 })).toBe(false)
   })
 })
 

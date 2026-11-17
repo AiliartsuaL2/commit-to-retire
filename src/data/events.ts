@@ -176,6 +176,41 @@ export const events: GameEvent[] = [
     ],
   },
 
+  {
+    id: 'onboarding_reality',
+    category: '레거시',
+    emoji: '🫥',
+    title: '온보딩 끝, 현실 시작',
+    text: '일주일 온보딩이 끝나고 레포를 열었어요. 테스트 0개, 배포는 FTP, 문서는 3년 전 위키가 전부예요. 면접 때 들은 이야기와 많이 달라요.',
+    // 신입 첫 회사에서는 비교 대상이 없어서 안 나온다. 이직한 첫해에만, 자주 나온다
+    weight: 40,
+    conditions: { maxYearsAtCompany: 0, minJobChanges: 1 },
+    choices: [
+      {
+        label: '개선안을 정리해서 제안한다',
+        check: { communication: 45, design: 45 },
+        outcomes: [
+          { chance: 0.6, text: '팀장이 반가워하며 CI 도입을 맡겼어요. 새 회사에서 존재감이 생겼어요.', tone: 'skill', effects: { stats: { design: 3, reputation: 1 }, gradeBonus: 10 } },
+          { chance: 0.4, text: '"원래 이렇게 해 왔어요" 한마디로 끝났어요. 들어오자마자 불평하는 사람으로 찍혔어요.', tone: 'unlucky', effects: { gradeBonus: -10, stamina: -5 } },
+        ],
+      },
+      {
+        label: '혼자서라도 CI를 붙인다',
+        check: { coding: 55 },
+        outcomes: [
+          { chance: 0.6, text: '조용히 붙여 둔 자동 배포를 팀원들이 하나둘 쓰기 시작했어요.', tone: 'skill', effects: { stats: { coding: 2, design: 2, reputation: 2 }, counters: { refactors: 1 } } },
+          { chance: 0.4, text: '내 PR만 빌드가 깨져서 "왜 혼자 다르게 하냐"는 눈총을 받았어요.', tone: 'unlucky', effects: { stamina: -10, gradeBonus: -5 } },
+        ],
+      },
+      {
+        label: '일단 적응한다',
+        outcomes: [
+          { chance: 1, text: '3개월이 지나니 FTP 배포도 손에 익었어요. 이게 맞나 싶지만요.', effects: { stats: { domain: 3 }, stamina: -5 } },
+        ],
+      },
+    ],
+  },
+
   // ─── 일정 ──────────────────────────────────────────────
   {
     id: 'spec_change_d3',

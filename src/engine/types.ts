@@ -206,6 +206,10 @@ export interface EventConditions {
   notFlags?: Flag[]
   /** 게임 내 달력 연도 (AI 시대 흐름 이벤트용) */
   minCalendarYear?: number
+  /** 지금 회사에서 보낸 햇수 상한 (0 = 입사 첫해) */
+  maxYearsAtCompany?: number
+  /** 최소 이직 횟수 (1 = 첫 회사 제외) */
+  minJobChanges?: number
 }
 
 export interface GameEvent {

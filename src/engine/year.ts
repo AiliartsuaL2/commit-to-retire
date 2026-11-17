@@ -76,6 +76,8 @@ export function isEligible(event: GameEvent, s: GameState): boolean {
   if (c.minAge !== undefined && s.age < c.minAge) return false
   if (c.maxAge !== undefined && s.age > c.maxAge) return false
   if (c.minCalendarYear !== undefined && s.calendarYear < c.minCalendarYear) return false
+  if (c.maxYearsAtCompany !== undefined && s.yearsAtCompany > c.maxYearsAtCompany) return false
+  if (c.minJobChanges !== undefined && s.counters.jobChanges < c.minJobChanges) return false
   if (c.companyTypes && !c.companyTypes.includes(s.company.type)) return false
   if (c.industries && !c.industries.includes(s.company.industry)) return false
   if (c.ranks && !c.ranks.includes(s.rank)) return false
