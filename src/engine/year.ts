@@ -52,6 +52,7 @@ export function startYear(state: GameState, focus: FocusId): GameState {
 
   s.focus = focus
   s.gradeBonus = 0
+  s.offerBonus = 0
   s.yearEvents = []
   s.yearStart = { stats: { ...s.stats }, salary: s.salary }
 
@@ -78,6 +79,7 @@ export function isEligible(event: GameEvent, s: GameState): boolean {
   if (c.minCalendarYear !== undefined && s.calendarYear < c.minCalendarYear) return false
   if (c.maxYearsAtCompany !== undefined && s.yearsAtCompany > c.maxYearsAtCompany) return false
   if (c.minJobChanges !== undefined && s.counters.jobChanges < c.minJobChanges) return false
+  if (c.maxJobChanges !== undefined && s.counters.jobChanges > c.maxJobChanges) return false
   if (c.companyTypes && !c.companyTypes.includes(s.company.type)) return false
   if (c.industries && !c.industries.includes(s.company.industry)) return false
   if (c.ranks && !c.ranks.includes(s.rank)) return false
@@ -331,7 +333,9 @@ function rollCompanyRisk(s: GameState, rng: Rng): FeedTrigger | null {
 
 function generateOffers(s: GameState, grade: Grade, rng: Rng): JobOffer[] {
   const focus = focusById[s.focus!]
-  let count = Math.floor(rng.range(0, 1.2) + focus.offerBonus * 0.8 + s.stats.reputation / 35 + (grade === 'S' ? 0.5 : 0))
+  let count = Math.floor(
+    rng.range(0, 1.2) + (focus.offerBonus + (s.offerBonus ?? 0)) * 0.8 + s.stats.reputation / 35 + (grade === 'S' ? 0.5 : 0),
+  )
   if (s.unemployed) count = Math.max(count, 2)
 
   const offers: JobOffer[] = []

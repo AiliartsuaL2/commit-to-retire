@@ -33,6 +33,7 @@ export function applyEffects(state: GameState, effects: Effects): void {
   if (effects.salaryPct) state.salary = Math.round(state.salary * (1 + effects.salaryPct))
   if (effects.assets) state.assets += effects.assets
   if (effects.gradeBonus) state.gradeBonus += effects.gradeBonus
+  if (effects.offerBonus) state.offerBonus = (state.offerBonus ?? 0) + effects.offerBonus
   for (const flag of effects.setFlags ?? []) {
     if (!state.flags.includes(flag)) state.flags.push(flag)
   }

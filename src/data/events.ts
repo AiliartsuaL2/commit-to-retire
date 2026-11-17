@@ -211,6 +211,40 @@ export const events: GameEvent[] = [
     ],
   },
 
+  {
+    id: 'late_realization',
+    category: '레거시',
+    emoji: '🍻',
+    title: '우리 회사만 이상했어요',
+    text: '대학 동기 모임에서 다들 "CI 안 돌려?", "코드리뷰 안 해?"라고 물어요. 3년 가까이 다니면서 원래 다 이런 줄 알았어요.',
+    // 신입은 첫 회사의 문제를 모르다가 2~3년차에 비교 대상을 만나 깨닫는다 (이직 후 버전은 onboarding_reality)
+    weight: 12,
+    once: true,
+    conditions: { minCareerYear: 2, maxCareerYear: 3, maxJobChanges: 0 },
+    choices: [
+      {
+        label: '이직 준비를 시작한다',
+        outcomes: [
+          { chance: 1, text: '링크드아웃 프로필을 3년 만에 업데이트했어요. 헤드헌터 연락이 오기 시작했어요.', effects: { offerBonus: 2, stats: { reputation: 1 } } },
+        ],
+      },
+      {
+        label: '우리 회사부터 바꿔본다',
+        check: { communication: 45, design: 40 },
+        outcomes: [
+          { chance: 0.6, text: '팀에 코드리뷰를 도입했어요. 선배들도 처음엔 투덜대더니 이제는 먼저 리뷰를 요청해요.', tone: 'skill', effects: { stats: { design: 3, communication: 2, reputation: 1 }, gradeBonus: 5 } },
+          { chance: 0.4, text: '"연차도 낮은 사람이 뭘 안다고"라는 말을 들었어요.', tone: 'unlucky', effects: { gradeBonus: -10, stamina: -10 } },
+        ],
+      },
+      {
+        label: '모르는 게 약이었다',
+        outcomes: [
+          { chance: 1, text: '동기 단톡방 알림을 껐어요. 오늘도 FTP로 배포해요.', effects: { stamina: 5, stats: { domain: 2 } } },
+        ],
+      },
+    ],
+  },
+
   // ─── 일정 ──────────────────────────────────────────────
   {
     id: 'spec_change_d3',

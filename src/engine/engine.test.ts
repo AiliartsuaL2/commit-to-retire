@@ -133,6 +133,28 @@ describe('이벤트 조건', () => {
   })
 })
 
+describe('뒤늦은 깨달음 이벤트', () => {
+  const late = events.find((e) => e.id === 'late_realization')!
+  const base = () => createGame({ profile, companyType: 'sme_si', industry: 'si_sm', seed: 1 })
+
+  it('첫 회사 2~3년차에만 나온다', () => {
+    expect(isEligible(late, base())).toBe(false)
+    expect(isEligible(late, { ...base(), careerYear: 2 })).toBe(true)
+    expect(isEligible(late, { ...base(), careerYear: 4 })).toBe(false)
+  })
+
+  it('이직한 적이 있으면 안 나온다', () => {
+    expect(isEligible(late, { ...base(), careerYear: 2, counters: { ...base().counters, jobChanges: 1 } })).toBe(false)
+  })
+
+  it('이직 준비를 고르면 올해 이직 제안 보너스가 생긴다', () => {
+    let s = startYear({ ...base(), careerYear: 2 }, 'study')
+    s = { ...s, pendingEvents: ['late_realization'] }
+    s = chooseEventOption(s, 0).state
+    expect(s.offerBonus).toBe(2)
+  })
+})
+
 describe('한 판 전체', () => {
   it('같은 시드면 결과가 완전히 같다', () => {
     const a = playToEnd(randomGame(99), 'random', 5)

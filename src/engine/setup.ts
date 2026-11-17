@@ -83,6 +83,7 @@ export function createGame({ profile, companyType, industry, seed }: NewGameInpu
     pendingEvents: [],
     yearEvents: [],
     gradeBonus: 0,
+    offerBonus: 0,
     yearStart: { stats: { ...stats }, salary },
     offers: [],
     flags: [],

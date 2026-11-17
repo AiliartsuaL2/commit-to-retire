@@ -167,6 +167,8 @@ export interface Effects {
   assets?: number
   /** 이번 해 고과 점수 보정 */
   gradeBonus?: number
+  /** 이번 해 연말 이직 제안 수 보정 */
+  offerBonus?: number
   setFlags?: Flag[]
   clearFlags?: Flag[]
   counters?: Partial<Record<CounterKey, number>>
@@ -210,6 +212,8 @@ export interface EventConditions {
   maxYearsAtCompany?: number
   /** 최소 이직 횟수 (1 = 첫 회사 제외) */
   minJobChanges?: number
+  /** 최대 이직 횟수 (0 = 첫 회사에서만) */
+  maxJobChanges?: number
 }
 
 export interface GameEvent {
@@ -357,6 +361,8 @@ export interface GameState {
   yearEvents: EventLogEntry[]
   /** 올해 고과에 더해질 점수 */
   gradeBonus: number
+  /** 올해 연말 이직 제안 수에 더해질 값 (이벤트로 생김). 예전 세이브에는 없을 수 있다 */
+  offerBonus?: number
   /** 연초 시점 스냅샷 (연말 결과 화면의 변화량 계산용) */
   yearStart: { stats: Stats; salary: number }
 
