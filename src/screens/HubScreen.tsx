@@ -16,6 +16,7 @@ import {
 } from '../engine'
 import { useGame } from '../store/game'
 import { Badge, Button, Card, Screen, StatBars, StatusHeader, Title } from '../ui'
+import { JOB_LOSS_TRIGGERS, majorEvents } from './majorEvents'
 
 export function HubScreen({ game }: { game: GameState }) {
   const { acceptOffer, declineOffers, chooseTrack, nextYear, retire, apply, spendGapYear, lastApplication, dismissApplication } = useGame()
@@ -23,6 +24,9 @@ export function HubScreen({ game }: { game: GameState }) {
   const postings = game.postings ?? []
   const appsLeft = game.applicationsLeft ?? 0
   const gapYear = canSpendGapYear(game)
+  // 왜 실직했는지 (작년 연말 기록 기준, 공백기를 보낸 뒤에는 표시하지 않음)
+  const lastRecord = game.history.at(-1)
+  const jobLoss = lastRecord ? majorEvents(lastRecord, game).find((m) => JOB_LOSS_TRIGGERS.includes(m.trigger)) : undefined
 
   const footer = gapYear ? (
     <Button variant="secondary" onClick={spendGapYear}>
@@ -42,11 +46,16 @@ export function HubScreen({ game }: { game: GameState }) {
 
       {game.unemployed && (
         <Card className="bg-red-50">
-          <p className="font-semibold text-red-600">{gapYear ? '이번에는 모두 떨어졌어요' : '새 회사를 구해야 해요'}</p>
+          {jobLoss && !gapYear && (
+            <p className="mb-1 text-xs font-medium text-red-400">
+              {jobLoss.emoji} {jobLoss.title}
+            </p>
+          )}
+          <p className="font-semibold text-red-600">{gapYear ? '이번에는 모두 떨어졌어요' : '지금은 실직 상태예요'}</p>
           <p className="text-sm text-red-500">
             {gapYear
               ? '연봉 없이 1년 동안 취업을 준비하고 다시 지원할 수 있어요. 생활비로 자산이 줄어요.'
-              : '채용 공고에 지원해서 합격한 곳으로 가야 다음 해로 넘어갈 수 있어요.'}
+              : `아래 채용 공고에 지원해서 합격한 곳으로 가야 다음 해로 넘어갈 수 있어요. 남은 지원 ${appsLeft}곳.`}
           </p>
         </Card>
       )}

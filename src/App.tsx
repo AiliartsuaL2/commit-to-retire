@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useLayoutEffect, useState } from 'react'
+import { remainingEvents } from './engine'
 import { EndingScreen } from './screens/EndingScreen'
 import { EventScreen } from './screens/EventScreen'
 import { HubScreen } from './screens/HubScreen'
@@ -17,6 +18,19 @@ export default function App() {
 
   // 새 게임이 만들어지면 바로 게임 화면으로
   const current: View = view === 'setup' && game ? 'game' : view
+
+  // 화면이 바뀌면 맨 위로 (연초 → 이벤트 → 결과 문구 → 연말 → 허브, 다음 해)
+  const lastOutcome = useGame((s) => s.lastOutcome)
+  const screenKey = [
+    current,
+    game?.phase,
+    game?.calendarYear,
+    game ? remainingEvents(game) : 0,
+    lastOutcome ? 'outcome' : '',
+  ].join('|')
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0)
+  }, [screenKey])
 
   if (current === 'title' || !game) {
     if (current === 'setup') return <SetupScreen onBack={() => setView('title')} />

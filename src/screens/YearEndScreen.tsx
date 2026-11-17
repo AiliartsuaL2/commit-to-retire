@@ -1,7 +1,9 @@
-import { BURNOUT_RESET_STAMINA, BURNOUTS_TO_RETIRE, events, platformLabels, rankById } from '../data'
+import { useState } from 'react'
+import { events, platformLabels, rankById } from '../data'
 import { formatSalary, type FeedPlatform, type FeedTrigger, type GameState, type Grade } from '../engine'
 import { useGame } from '../store/game'
 import { Badge, Button, Card, Screen, StatBars } from '../ui'
+import { majorEvents, type MajorEventInfo } from './majorEvents'
 
 const GRADE_STYLE: Record<Grade, string> = {
   S: 'text-amber-500',
@@ -36,6 +38,9 @@ export function YearEndScreen({ game }: { game: GameState }) {
   const record = game.history[game.history.length - 1]
   const raise = record.salaryAfter - record.salaryBefore
   const raisePct = Math.round((raise / record.salaryBefore) * 100)
+  const major = majorEvents(record, game)
+  const [popupClosed, setPopupClosed] = useState(false)
+  const showPopup = major.length > 0 && !popupClosed
 
   return (
     <Screen footer={<Button onClick={acknowledge}>{game.retirement ? '은퇴식으로' : '확인'}</Button>}>
@@ -58,16 +63,14 @@ export function YearEndScreen({ game }: { game: GameState }) {
         </div>
       )}
 
-      {record.triggers.includes('burnout') && (
-        <Card className="bg-red-50">
-          <p className="font-semibold text-red-600">
-            번아웃이 왔어요 ({game.counters.burnouts}/{BURNOUTS_TO_RETIRE})
+      {major.map((m) => (
+        <Card key={m.trigger} className={m.tone === 'bad' ? 'bg-red-50' : 'bg-emerald-50'}>
+          <p className={`font-semibold ${m.tone === 'bad' ? 'text-red-600' : 'text-emerald-700'}`}>
+            {m.emoji} {m.title}
           </p>
-          <p className="text-sm text-red-500">
-            올해 고과는 D로 처리됐고 체력은 {BURNOUT_RESET_STAMINA}에서 다시 시작해요. {BURNOUTS_TO_RETIRE}번째 번아웃이면 은퇴해요.
-          </p>
+          <p className={`text-sm ${m.tone === 'bad' ? 'text-red-500' : 'text-emerald-700'}`}>{m.body}</p>
         </Card>
-      )}
+      ))}
 
       <Card className="flex flex-col gap-1">
         <p className="text-sm text-gray-500">연봉</p>
@@ -114,6 +117,31 @@ export function YearEndScreen({ game }: { game: GameState }) {
           <p className="text-center text-xs text-gray-400">실제 커뮤니티를 패러디한 게임 속 가상 반응이에요</p>
         </section>
       )}
+
+      {showPopup && <MajorEventSheet events={major} onClose={() => setPopupClosed(true)} />}
     </Screen>
+  )
+}
+
+/** 실직·엑싯·번아웃처럼 놓치면 안 되는 사건을 화면에 들어오자마자 알려준다 */
+function MajorEventSheet({ events, onClose }: { events: MajorEventInfo[]; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center" role="dialog" aria-modal="true">
+      <div className="w-full max-w-md rounded-t-3xl bg-white p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:rounded-3xl">
+        <p className="mb-4 text-sm text-gray-500">올해 큰일이 있었어요</p>
+        <div className="mb-6 flex flex-col gap-5">
+          {events.map((m) => (
+            <div key={m.trigger} className="flex gap-3">
+              <span className="text-4xl leading-none">{m.emoji}</span>
+              <div>
+                <p className={`text-lg font-bold ${m.tone === 'bad' ? 'text-red-600' : 'text-emerald-700'}`}>{m.title}</p>
+                <p className="mt-1 text-sm leading-relaxed text-gray-700">{m.body}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+        <Button onClick={onClose}>확인했어요</Button>
+      </div>
+    </div>
   )
 }

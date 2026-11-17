@@ -156,9 +156,13 @@ export function StatusHeader({ game }: { game: GameState }) {
           <p className="font-bold">
             {game.profile.name} <span className="font-normal text-gray-500">· {rankById[game.rank].label}</span>
           </p>
-          <p className="truncate text-sm text-gray-500">
-            {company.emoji} {game.company.name} · {industry.label}
-          </p>
+          {game.unemployed ? (
+            <p className="truncate text-sm font-medium text-red-500">🎒 실직 중 · 전 직장 {game.company.name}</p>
+          ) : (
+            <p className="truncate text-sm text-gray-500">
+              {company.emoji} {game.company.name} · {industry.label}
+            </p>
+          )}
         </div>
         <div className="text-right">
           <p className="text-xs text-gray-500">
