@@ -21,17 +21,17 @@ export const ranks: RankDef[] = [
 
 export const focuses: FocusDef[] = [
   {
-    id: 'coding', label: '코딩 집중 훈련', emoji: '💻',
+    id: 'coding', label: '코드에 깊이 빠지기', emoji: '💻',
     description: '구현 연습과 코드 리뷰로 코딩 실력을 집중적으로 키워요.',
     statGain: { coding: 8 }, stamina: -8, gradeBonus: 0, offerBonus: 0,
   },
   {
-    id: 'design', label: '설계 집중 훈련', emoji: '📐',
+    id: 'design', label: '큰 그림 설계하기', emoji: '📐',
     description: '시스템 설계와 아키텍처 공부로 설계 실력을 집중적으로 키워요.',
     statGain: { design: 8 }, stamina: -8, gradeBonus: 0, offerBonus: 0,
   },
   {
-    id: 'communication', label: '소통 집중 훈련', emoji: '💬',
+    id: 'communication', label: '동료와 함께 풀기', emoji: '💬',
     description: '문서 작성과 협업 연습으로 소통 실력을 집중적으로 키워요.',
     statGain: { communication: 8 }, stamina: -8, gradeBonus: 0, offerBonus: 0,
   },

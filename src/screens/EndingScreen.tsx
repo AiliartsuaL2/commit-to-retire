@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { achievements, companyTypeById, educationById, rankById } from '../data'
-import { careerPeriodLabel, endingShareText, summarizeCareer } from '../engine/career'
-import { formatSalary, type FameGrade, type GameState, type RetireReason } from '../engine'
+import { careerPeriodLabel, endingShareText, type EndingResult } from '../engine/career'
+import { resultUrl } from '../engine/share'
+import { formatSalary, type FameGrade, type RetireReason } from '../engine'
 import { Button, Card, Screen, StatBars } from '../ui'
 
 const REASON: Record<RetireReason, string> = {
@@ -19,24 +20,24 @@ const GRADE_STYLE: Record<FameGrade, string> = {
   D: 'from-orange-300 to-red-400',
 }
 
-export function EndingScreen({ game, onNew }: { game: GameState; onNew: () => void }) {
+export function EndingScreen({ game, onNew, shared = false }: { game: EndingResult; onNew: () => void; shared?: boolean }) {
   const r = game.retirement!
   const unlocked = new Set(game.achievements)
-  const first = game.history[0]
-  const career = summarizeCareer(game.history)
+  const first = game.career[0]
+  const career = game.career
   const [sharing, setSharing] = useState(false)
   const [shareMessage, setShareMessage] = useState('')
   const [manualCopy, setManualCopy] = useState('')
 
-  async function share() {
-    if (sharing) return
-    setSharing(true)
+  async function share(copyOnly = false) {
+    if (sharing && !copyOnly) return
+    if (!copyOnly) setSharing(true)
     setShareMessage('')
     setManualCopy('')
-    const url = `${window.location.origin}${window.location.pathname}`
-    const text = endingShareText(game)
     try {
-      if (navigator.share) {
+      const url = resultUrl(game, window.location.href)
+      const text = endingShareText(game)
+      if (!copyOnly && navigator.share) {
         try {
           await navigator.share({ title: '커밋에서 은퇴까지 · 나의 커리어', text, url })
           setShareMessage('공유했어요.')
@@ -53,13 +54,16 @@ export function EndingScreen({ game, onNew }: { game: GameState; onNew: () => vo
         setManualCopy(content)
         setShareMessage('자동 복사를 사용할 수 없어요. 아래 내용을 선택해 복사해 주세요.')
       }
+    } catch {
+      setShareMessage('공유 링크를 만들지 못했어요. 다시 시도해 주세요.')
     } finally {
-      setSharing(false)
+      if (!copyOnly) setSharing(false)
     }
   }
 
   return (
-    <Screen footer={<Button onClick={onNew}>새 인생 시작하기</Button>}>
+    <Screen footer={<Button onClick={onNew}>{shared ? '내 게임으로 돌아가기' : '새 인생 시작하기'}</Button>}>
+      {shared && <p className="text-center text-sm text-blue-600">공유받은 커리어 결과예요</p>}
       <div className="flex flex-col items-center gap-3 pt-4 text-center">
         <span className="text-6xl">{game.profile.emoji}</span>
         <p className="text-sm text-gray-500">{REASON[r.reason]}</p>
@@ -71,9 +75,10 @@ export function EndingScreen({ game, onNew }: { game: GameState; onNew: () => vo
       </div>
 
       <div className="flex flex-col gap-2">
-        <Button variant="secondary" onClick={share} disabled={sharing}>
+        <Button variant="secondary" onClick={() => share()} disabled={sharing}>
           {sharing ? '공유 중…' : '결과 공유하기'}
         </Button>
+        <button type="button" onClick={() => share(true)} className="py-2 text-sm font-medium text-blue-600">결과 링크 복사</button>
         <p role="status" className="text-sm text-gray-500">{shareMessage}</p>
         {manualCopy && <textarea aria-label="공유할 결과" readOnly value={manualCopy} onFocus={(e) => e.currentTarget.select()} rows={8} className="w-full rounded-xl border border-gray-200 p-3 text-sm" />}
       </div>
@@ -89,7 +94,7 @@ export function EndingScreen({ game, onNew }: { game: GameState; onNew: () => vo
         <span className="text-right font-semibold">{rankById[game.bestRank].label}</span>
         <span className="text-gray-500">경력</span>
         <span className="text-right font-semibold">
-          {game.history.length}년 · 이직 {game.counters.jobChanges}회
+          {game.years}년 · 이직 {game.jobChanges}회
         </span>
         <span className="text-gray-500">마지막 연봉</span>
         <span className="text-right font-semibold">{formatSalary(game.salary)}</span>

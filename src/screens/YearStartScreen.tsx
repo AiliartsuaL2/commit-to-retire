@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { focuses, statLabels } from '../data'
-import { staminaChange, type FocusId, type GameState, type StatKey } from '../engine'
+import { focuses } from '../data'
+import { staminaChange, type FocusId, type GameState } from '../engine'
 import { useGame } from '../store/game'
-import { Button, Card, Choice, Screen, StatBars, StatusHeader, Title } from '../ui'
+import { Button, Choice, Screen, StatusHeader, Title } from '../ui'
 
 export function YearStartScreen({ game }: { game: GameState }) {
   const startYear = useGame((s) => s.startYear)
@@ -24,7 +24,6 @@ export function YearStartScreen({ game }: { game: GameState }) {
         <p className="rounded-2xl bg-red-50 p-3 text-sm text-red-600">체력이 바닥이에요. 이대로면 번아웃이 올 수 있어요.</p>
       )}
       <p className="text-xs text-gray-400">체력 숫자는 올해 예상 변화예요. 사건이 터지면 더 깎일 수 있어요.</p>
-      <p className="text-xs text-gray-400">성장 보너스는 기본값이며, 실제 상승량은 회사·현재 능력치 등에 따라 달라져요.</p>
 
       <div className="flex flex-col gap-2">
         {focuses.map((f) => {
@@ -44,11 +43,6 @@ export function YearStartScreen({ game }: { game: GameState }) {
                     </span>
                   </div>
                   <p className="text-sm text-gray-500">{f.description}</p>
-                  {Object.keys(f.statGain).length > 0 && (
-                    <p className="mt-1 text-xs font-medium text-blue-600">
-                      성장 보너스 · {Object.entries(f.statGain).map(([key, value]) => `${statLabels[key as StatKey]} +${value}`).join(' · ')}
-                    </p>
-                  )}
                 </div>
               </div>
             </Choice>
@@ -56,10 +50,6 @@ export function YearStartScreen({ game }: { game: GameState }) {
         })}
       </div>
 
-      <Card>
-        <p className="mb-3 text-sm font-medium text-gray-600">능력치</p>
-        <StatBars stats={game.stats} />
-      </Card>
     </Screen>
   )
 }

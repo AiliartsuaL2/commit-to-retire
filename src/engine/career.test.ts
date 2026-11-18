@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { randomGame } from './bot'
-import { careerPeriodLabel, endingShareText, summarizeCareer } from './career'
+import { careerPeriodLabel, endingResult, endingShareText, summarizeCareer } from './career'
 import { evaluateRetirement } from './ending'
 import { finishYear, startYear } from './year'
 import type { FocusId, YearRecord } from './types'
@@ -40,7 +40,7 @@ describe('커리어 요약', () => {
     const game = completeYear()
     game.history = [record(2022), record(2023)]
     game.retirement = evaluateRetirement(game, 'voluntary')
-    const text = endingShareText(game)
+    const text = endingShareText(endingResult(game))
     expect(text).toContain(game.retirement.title)
     expect(text).toContain(`2022~2023 ${base.company.name}`)
     expect(text).toContain(game.profile.name)

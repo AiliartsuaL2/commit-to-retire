@@ -13,9 +13,9 @@ export function TitleScreen({ onNew, onContinue }: { onNew: () => void; onContin
     <Screen
       footer={
         <div className="flex flex-col gap-2">
-          {resumable && <Button onClick={onContinue}>이어하기</Button>}
+          {game && <Button onClick={onContinue}>{resumable ? '이어하기' : '지난 결과 보기'}</Button>}
           <Button
-            variant={resumable ? 'secondary' : 'primary'}
+            variant={game ? 'secondary' : 'primary'}
             onClick={() => {
               reset()
               onNew()
