@@ -32,7 +32,7 @@ export type RankId =
 
 export type Track = 'common' | 'manager' | 'ic'
 
-export type FocusId = 'all_in' | 'study' | 'side_project' | 'networking' | 'job_hunt' | 'rest'
+export type FocusId = 'all_in' | 'study' | 'coding' | 'design' | 'communication' | 'side_project' | 'networking' | 'job_hunt' | 'rest'
 
 export type Grade = 'S' | 'A' | 'B' | 'C' | 'D'
 

@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { achievements, companyTypeById, educationById, rankById } from '../data'
+import { careerPeriodLabel, endingShareText, summarizeCareer } from '../engine/career'
 import { formatSalary, type FameGrade, type GameState, type RetireReason } from '../engine'
 import { Button, Card, Screen, StatBars } from '../ui'
 
@@ -21,6 +23,40 @@ export function EndingScreen({ game, onNew }: { game: GameState; onNew: () => vo
   const r = game.retirement!
   const unlocked = new Set(game.achievements)
   const first = game.history[0]
+  const career = summarizeCareer(game.history)
+  const [sharing, setSharing] = useState(false)
+  const [shareMessage, setShareMessage] = useState('')
+  const [manualCopy, setManualCopy] = useState('')
+
+  async function share() {
+    if (sharing) return
+    setSharing(true)
+    setShareMessage('')
+    setManualCopy('')
+    const url = `${window.location.origin}${window.location.pathname}`
+    const text = endingShareText(game)
+    try {
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: '커밋에서 은퇴까지 · 나의 커리어', text, url })
+          setShareMessage('공유했어요.')
+          return
+        } catch (error) {
+          if (error instanceof Error && error.name === 'AbortError') return
+        }
+      }
+      const content = `${text}\n\n${url}`
+      try {
+        await navigator.clipboard.writeText(content)
+        setShareMessage('결과와 커리어 요약을 복사했어요. 원하는 곳에 붙여넣어 주세요.')
+      } catch {
+        setManualCopy(content)
+        setShareMessage('자동 복사를 사용할 수 없어요. 아래 내용을 선택해 복사해 주세요.')
+      }
+    } finally {
+      setSharing(false)
+    }
+  }
 
   return (
     <Screen footer={<Button onClick={onNew}>새 인생 시작하기</Button>}>
@@ -32,6 +68,14 @@ export function EndingScreen({ game, onNew }: { game: GameState; onNew: () => vo
         </div>
         <h1 className="text-2xl font-bold">{r.title}</h1>
         <p className="text-sm text-gray-500">명성 점수 {r.fameScore}</p>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Button variant="secondary" onClick={share} disabled={sharing}>
+          {sharing ? '공유 중…' : '결과 공유하기'}
+        </Button>
+        <p role="status" className="text-sm text-gray-500">{shareMessage}</p>
+        {manualCopy && <textarea aria-label="공유할 결과" readOnly value={manualCopy} onFocus={(e) => e.currentTarget.select()} rows={8} className="w-full rounded-xl border border-gray-200 p-3 text-sm" />}
       </div>
 
       <Card className="grid grid-cols-2 gap-y-3 text-sm">
@@ -78,15 +122,19 @@ export function EndingScreen({ game, onNew }: { game: GameState; onNew: () => vo
       </section>
 
       <section className="flex flex-col gap-2">
-        <p className="text-sm font-medium text-gray-600">커리어 연표</p>
+        <p className="text-sm font-medium text-gray-600">커리어 요약</p>
         <Card className="flex flex-col gap-2 text-sm">
-          {game.history.map((h) => (
-            <div key={h.calendarYear} className="flex items-center gap-2">
-              <span className="w-10 shrink-0 text-xs text-gray-400 tabular-nums">{h.calendarYear}</span>
-              <span className={`min-w-0 flex-1 truncate ${h.gap ? 'text-gray-400' : ''}`}>
-                {h.gap ? '🎒 취업 준비' : `${companyTypeById[h.company.type].emoji} ${h.company.name} · ${rankById[h.rank].label}`}
-              </span>
-              <span className="w-5 text-right font-bold">{h.gap ? '-' : h.grade}</span>
+          {career.length === 0 && <p className="text-gray-400">아직 완료한 경력이 없어요.</p>}
+          {career.map((period) => (
+            <div key={period.start} className="flex items-start gap-3">
+              <span className="w-20 shrink-0 text-xs text-gray-400 tabular-nums">{careerPeriodLabel(period)}</span>
+              <div className={`min-w-0 flex-1 ${period.gap ? 'text-gray-400' : ''}`}>
+                <p className="break-words font-semibold">{period.gap ? '🎒 취업 준비' : `${companyTypeById[period.company.type].emoji} ${period.company.name}`}</p>
+                <p className="text-xs text-gray-500">
+                  {period.end - period.start + 1}년
+                  {!period.gap && ` · ${rankById[period.firstRank].label}${period.firstRank !== period.lastRank ? ` → ${rankById[period.lastRank].label}` : ''}`}
+                </p>
+              </div>
             </div>
           ))}
         </Card>
