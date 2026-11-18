@@ -6,12 +6,14 @@ import {
   formatSalary,
   HIRING_STAGES,
   nextPromotion,
+  NEGOTIATION_RAISES,
   STAGE_LABELS,
   type ApplicationResult,
   type GameState,
   type JobOffer,
   type JobPosting,
   type PromotionTarget,
+  type NegotiationRaise,
   type StatKey,
 } from '../engine'
 import { useGame } from '../store/game'
@@ -19,7 +21,7 @@ import { Badge, Button, Card, Screen, StatBars, StatusHeader, Title } from '../u
 import { JOB_LOSS_TRIGGERS, majorEvents } from './majorEvents'
 
 export function HubScreen({ game }: { game: GameState }) {
-  const { acceptOffer, declineOffers, chooseTrack, nextYear, retire, apply, spendGapYear, lastApplication, dismissApplication } = useGame()
+  const { acceptOffer, negotiateOffer, declineOffers, chooseTrack, nextYear, retire, apply, spendGapYear, lastApplication, dismissApplication } = useGame()
   const [confirmRetire, setConfirmRetire] = useState(false)
   const postings = game.postings ?? []
   const appsLeft = game.applicationsLeft ?? 0
@@ -85,7 +87,7 @@ export function HubScreen({ game }: { game: GameState }) {
         <section className="flex flex-col gap-2">
           <p className="text-sm font-medium text-gray-600">📨 받은 제안 {game.offers.length}건</p>
           {game.offers.map((o, i) => (
-            <OfferCard key={o.company.name} offer={o} game={game} onAccept={() => acceptOffer(i)} />
+            <OfferCard key={o.company.name} offer={o} game={game} onAccept={() => acceptOffer(i)} onNegotiate={(percent) => negotiateOffer(i, percent)} />
           ))}
           {!game.unemployed && (
             <button type="button" onClick={declineOffers} className="py-2 text-sm text-gray-500">
@@ -117,6 +119,10 @@ export function HubScreen({ game }: { game: GameState }) {
             />
           ))}
         </section>
+      )}
+
+      {postings.length === 0 && game.offers.length === 0 && !game.unemployed && (
+        <p className="rounded-2xl bg-gray-50 p-3 text-sm text-gray-500">지금 확인할 채용 공고가 없어요. 재직 중에는 연봉이 오르거나 더 높은 직급인 공고를 찾아드려요.</p>
       )}
 
       <Card>
@@ -240,7 +246,9 @@ function CompanyLine({ company, rank }: { company: JobOffer['company']; rank: Jo
   )
 }
 
-function OfferCard({ offer, game, onAccept }: { offer: JobOffer; game: GameState; onAccept: () => void }) {
+function OfferCard({ offer, game, onAccept, onNegotiate }: {
+  offer: JobOffer; game: GameState; onAccept: () => void; onNegotiate: (percent: NegotiationRaise) => void
+}) {
   const c = companyTypeById[offer.company.type]
   const industryChange = offer.company.industry !== game.company.industry
   return (
@@ -252,10 +260,36 @@ function OfferCard({ offer, game, onAccept }: { offer: JobOffer; game: GameState
       <div className="flex flex-wrap gap-1.5">
         <Badge tone={offer.source === 'headhunter' ? 'blue' : 'green'}>{offer.source === 'headhunter' ? '📞 헤드헌터' : '🎉 최종 합격'}</Badge>
         {offer.rank !== game.rank && <Badge tone="blue">⬆️ 직급 상승</Badge>}
+        {offer.recruitmentPremium && <Badge tone="green">경력자 영입 프리미엄</Badge>}
         {c.stockOption && <Badge tone="green">스톡옵션</Badge>}
         <Badge>야근 {'🔥'.repeat(c.overtime)}</Badge>
         {industryChange && <Badge tone="amber">업종 변경 · 도메인 일부 리셋</Badge>}
         {game.flags.includes('mortgage') && offer.salary < game.salary && <Badge tone="red">대출 이자 주의</Badge>}
+      </div>
+      {offer.salary < game.salary && offer.rank !== game.rank && (
+        <p className="text-xs text-amber-700">직급은 올라가지만 현금 연봉은 낮은 제안이에요. 협상 후 결정할 수 있어요.</p>
+      )}
+      <div className="rounded-xl bg-white p-3">
+        {offer.negotiation ? (
+          <p role="status" className={`text-sm ${offer.negotiation.accepted ? 'text-emerald-700' : 'text-gray-600'}`}>
+            {offer.negotiation.accepted
+              ? `협상 성공! ${formatSalary(offer.negotiation.originalSalary)} → ${formatSalary(offer.salary)}`
+              : `${formatSalary(offer.negotiation.requestedSalary)} 요청은 거절됐어요. 기존 제안은 그대로 수락할 수 있어요.`}
+          </p>
+        ) : (
+          <>
+            <p className="text-sm font-semibold">연봉 협상</p>
+            <p className="mb-2 text-xs text-gray-500">오퍼당 한 번 요청할 수 있어요. 큰 인상일수록 어렵고, 소통·평판과 회사 예산에 따라 결정돼요. 거절돼도 기존 제안은 유지돼요.</p>
+            <div className="grid grid-cols-3 gap-2">
+              {NEGOTIATION_RAISES.map((percent) => (
+                <button key={percent} type="button" onClick={() => onNegotiate(percent)} className="rounded-xl bg-blue-50 px-1 py-3 text-blue-700 active:bg-blue-100">
+                  <span className="block text-sm font-semibold">+{percent}% 요청</span>
+                  <span className="text-xs">{formatSalary(Math.round(offer.salary * (1 + percent / 100)))}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </div>
       <Button variant="secondary" onClick={onAccept}>
         이 회사로 이직하기
@@ -304,6 +338,7 @@ function PostingCard({
           {difficultyStars(posting)}
         </span>
         {posting.rank !== game.rank && <Badge tone="blue">⬆️ 승진 포지션</Badge>}
+        {posting.recruitmentPremium && <Badge tone="green">경력자 영입 프리미엄</Badge>}
         {resultBadge}
       </div>
       {!posting.applied && (

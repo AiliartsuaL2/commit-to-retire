@@ -6,6 +6,9 @@ export { startYear, currentEvent, remainingEvents, chooseEventOption, finishYear
 export { acceptOffer, declineOffers, chooseTrack, canChooseTrack, nextYear, retireNow } from './hub'
 export { formatSalary, meetsStats, nextPromotion, type PromotionTarget } from './rules'
 export {
+  negotiateOffer,
+  NEGOTIATION_RAISES,
+  type NegotiationRaise,
   applyToPosting,
   canSpendGapYear,
   spendGapYear,

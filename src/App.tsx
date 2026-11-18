@@ -1,4 +1,7 @@
-import { useLayoutEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
+import { endingResult } from './engine/career'
+import { readSharedResult } from './engine/share'
+import { Button, Screen, Title } from './ui'
 import { remainingEvents } from './engine'
 import { EndingScreen } from './screens/EndingScreen'
 import { EventScreen } from './screens/EventScreen'
@@ -15,6 +18,12 @@ export default function App() {
   const game = useGame((s) => s.game)
   const reset = useGame((s) => s.reset)
   const [view, setView] = useState<View>('title')
+  const [shared, setShared] = useState(() => readSharedResult(window.location.hash))
+  useEffect(() => {
+    const update = () => setShared(readSharedResult(window.location.hash))
+    window.addEventListener('hashchange', update)
+    return () => window.removeEventListener('hashchange', update)
+  }, [])
 
   // 새 게임이 만들어지면 바로 게임 화면으로
   const current: View = view === 'setup' && game ? 'game' : view
@@ -30,7 +39,20 @@ export default function App() {
   ].join('|')
   useLayoutEffect(() => {
     window.scrollTo(0, 0)
-  }, [screenKey])
+  }, [screenKey, shared])
+
+  const closeShared = () => {
+    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`)
+    setShared({ status: 'none' })
+    setView('title')
+  }
+  if (shared.status === 'valid') return <EndingScreen game={shared.result} shared onNew={closeShared} />
+  if (shared.status === 'invalid') return (
+    <Screen footer={<Button onClick={closeShared}>내 게임으로 돌아가기</Button>}>
+      <Title>공유 링크를 확인해 주세요</Title>
+      <p className="text-sm text-gray-500">링크가 잘렸거나 지원하지 않는 결과예요. 전체 링크를 다시 받아 주세요.</p>
+    </Screen>
+  )
 
   if (current === 'title' || !game) {
     if (current === 'setup') return <SetupScreen onBack={() => setView('title')} />
@@ -52,6 +74,6 @@ export default function App() {
     case 'hub':
       return <HubScreen game={game} />
     case 'retired':
-      return <EndingScreen game={game} onNew={startOver} />
+      return <EndingScreen game={endingResult(game)} onNew={startOver} />
   }
 }

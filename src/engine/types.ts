@@ -314,6 +314,10 @@ export interface JobOffer {
   salary: number
   /** 헤드헌터가 가져온 제안인지, 내가 지원해서 붙은 곳인지 */
   source?: 'headhunter' | 'application'
+  /** 회사가 이 포지션에 책정한 협상 상한. 예전 세이브에는 없을 수 있다. */
+  salaryCeiling?: number
+  recruitmentPremium?: boolean
+  negotiation?: { requestedSalary: number; originalSalary: number; accepted: boolean }
 }
 
 /** 채용 공고. 지원하면 서류 → 코딩테스트 → 기술 면접 → 임원 면접을 거친다 */
@@ -322,6 +326,8 @@ export interface JobPosting {
   rank: RankId
   /** 합격하면 받을 연봉 (만 원) */
   salary: number
+  salaryCeiling?: number
+  recruitmentPremium?: boolean
   applied: boolean
   /** 지원 결과: 최종 합격이면 'passed', 떨어졌으면 떨어진 단계 */
   result?: 'passed' | HiringStage

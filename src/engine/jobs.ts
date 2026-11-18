@@ -1,6 +1,6 @@
 // 이직 시장: 헤드헌터 제안, 채용 공고, 지원 전형, 취준 공백기
 
-import { companyTypeById, companyTypes, focusById, industries, ranks, RETIRE_AGE } from '../data'
+import { companyTypeById, companyTypes, focusById, industries, ranks, rankById, RETIRE_AGE } from '../data'
 import { evaluateRetirement } from './ending'
 import { createRng, type Rng } from './rng'
 import { clamp, hiringScore, marketSalary, meetsStats, pickCompanyName } from './rules'
@@ -61,7 +61,9 @@ export function rollHeadhunterOffer(s: GameState, grade: Grade, focus: FocusId, 
     const industry = rng.pick(industries).id
     const name = pickCompanyName(rng, type, s.company.name)
     if (name === s.company.name) continue
-    return [{ ...makeOffer(s, { name, type, industry }, s.rank, rng), source: 'headhunter' }]
+    const offer = makeOffer(s, { name, type, industry }, postingRank(s, rng), rng)
+    if (!worthMoving(s, offer)) continue
+    return [{ ...offer, source: 'headhunter' }]
   }
   return []
 }
@@ -76,25 +78,60 @@ export function generatePostings(s: GameState, rng: Rng): JobPosting[] {
     used.add(name)
     const company: Company = { name, type, industry: rng.pick(industries).id }
     const rank = postingRank(s, rng)
-    postings.push({ company, rank, salary: makeOffer(s, company, rank, rng).salary, applied: false })
+    const offer = makeOffer(s, company, rank, rng)
+    if (!worthMoving(s, offer)) continue
+    postings.push({ ...offer, applied: false })
   }
   return postings
 }
 
-/** 대부분 지금 직급, 가끔 한 단계 위 포지션 (능력치가 되면) */
+/** 선택한 트랙 안에서 경력·역량을 갖추면 한 단계 위 포지션도 제안한다. */
 function postingRank(s: GameState, rng: Rng): RankId {
+  // 쉬어간 해에는 승진 포지션을 제안하지 않는다. 이직 준비는 승진 이직이 가능하다.
+  if ((s.focus ?? s.history.at(-1)?.focus) === 'rest') return s.rank
   const up = ranks.find(
-    (r) => r.from === s.rank && r.track === 'common' && s.careerYear >= r.minYears && s.yearsAtRank >= 2 && meetsStats(s.stats, r.minStats),
+    (r) => r.from === s.rank && (r.track === 'common' || r.track === s.preferredTrack || r.track === rankById[s.rank].track) &&
+      s.careerYear >= r.minYears && s.yearsAtRank >= 2 && meetsStats(s.stats, r.minStats),
   )
-  return up && rng.chance(0.2) ? up.id : s.rank
+  return up && rng.chance(0.45) ? up.id : s.rank
 }
 
-function makeOffer(s: GameState, company: Company, rank: RankId, rng: Rng): JobOffer {
-  const raise = s.unemployed ? rng.range(0.9, 1.1) : rng.range(1.08, 1.3)
+function worthMoving(s: GameState, offer: JobOffer): boolean {
+  return s.unemployed || offer.salary > s.salary || rankById[offer.rank].fameScore > rankById[s.rank].fameScore
+}
+
+export function makeOffer(s: GameState, company: Company, rank: RankId, rng: Rng): JobOffer {
+  // 자금 여력이 있는 스타트업의 경력자 영입 예산. 모든 스타트업의 현금 보상을 보장하지는 않는다.
+  const recruitmentPremium = ['series_b', 'unicorn'].includes(company.type) &&
+    ['chaebol', 'chaebol_si', 'bigtech', 'foreign'].includes(s.company.type) && s.careerYear >= 4 && !s.unemployed
+  const raise = s.unemployed ? rng.range(0.9, 1.1) : recruitmentPremium ? rng.range(1.2, 1.4) : rng.range(1.08, 1.3)
   const market = marketSalary(company.type, company.industry, rank, s.careerYear)
-  // 시장 연봉의 1.5배를 넘는 제안은 없다
-  const salary = Math.round(Math.min(Math.max(s.salary * raise, market), market * 1.5))
-  return { company, rank, salary }
+  const salaryCeiling = Math.round(market * (recruitmentPremium ? 2.4 : 1.8))
+  // 최초 제안은 예산의 일부를 남겨 협상 여지를 둔다. 현 연봉을 반복해서 무한 증폭시키지 않는다.
+  const salary = Math.round(Math.min(Math.max(s.salary * raise, market), salaryCeiling / 1.15))
+  return { company, rank, salary, salaryCeiling, recruitmentPremium }
+}
+
+export const NEGOTIATION_RAISES = [5, 10, 20] as const
+export type NegotiationRaise = typeof NEGOTIATION_RAISES[number]
+
+/** 오퍼마다 한 번. 거절되어도 원래 제안은 남고, RNG 상태와 결과는 저장된다. */
+export function negotiateOffer(state: GameState, index: number, percent: NegotiationRaise): GameState {
+  if (state.phase !== 'hub') throw new Error('허브에서만 협상할 수 있어요')
+  const offer = state.offers[index]
+  if (!offer) throw new Error('없는 제안이에요')
+  if (offer.negotiation) throw new Error('이미 협상을 마친 제안이에요')
+  if (!NEGOTIATION_RAISES.includes(percent)) throw new Error('지원하지 않는 협상 조건이에요')
+  const s = structuredClone(state)
+  const rng = createRng(s.rngState)
+  const requestedSalary = Math.round(offer.salary * (1 + percent / 100))
+  const ceiling = offer.salaryCeiling ?? Math.round(offer.salary * 1.15)
+  const chance = clamp(0.6 + s.stats.communication * 0.003 + s.stats.reputation * 0.001 - percent * 0.025 - (s.unemployed ? 0.1 : 0), 0.1, 0.9)
+  const accepted = rng.chance(chance) && requestedSalary <= ceiling
+  s.offers[index] = { ...offer, salary: accepted ? requestedSalary : offer.salary,
+    negotiation: { requestedSalary, originalSalary: offer.salary, accepted } }
+  s.rngState = rng.state
+  return s
 }
 
 // ─── 허브에서 호출: 지원하기 ────────────────────────────
@@ -145,7 +182,8 @@ export function applyToPosting(state: GameState, index: number): { state: GameSt
 
   s.postings![index] = { ...posting, applied: true, result: failedAt ?? 'passed' }
   s.applicationsLeft = (s.applicationsLeft ?? 0) - 1
-  if (!failedAt) s.offers.push({ company: posting.company, rank: posting.rank, salary: posting.salary, source: 'application' })
+  if (!failedAt) s.offers.push({ company: posting.company, rank: posting.rank, salary: posting.salary,
+    salaryCeiling: posting.salaryCeiling, recruitmentPremium: posting.recruitmentPremium, source: 'application' })
   s.rngState = rng.state
   return { state: s, result: { posting: s.postings![index], passed, failedAt } }
 }

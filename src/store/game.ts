@@ -12,6 +12,7 @@ import {
   declineOffers,
   finishYear,
   nextYear,
+  negotiateOffer,
   remainingEvents,
   retireNow,
   spendGapYear,
@@ -20,6 +21,7 @@ import {
   type EventOutcome,
   type FocusId,
   type GameState,
+  type NegotiationRaise,
 } from '../engine'
 import type { NewGameInput } from '../engine/setup'
 
@@ -35,6 +37,7 @@ interface Store {
   continueAfterOutcome: () => void
   acknowledgeYear: () => void
   acceptOffer: (index: number) => void
+  negotiateOffer: (index: number, percent: NegotiationRaise) => void
   declineOffers: () => void
   chooseTrack: (track: 'manager' | 'ic') => void
   /** 채용 공고에 지원한다. 결과는 lastApplication에 담겨 화면이 단계별로 보여준다 */
@@ -81,6 +84,7 @@ export const useGame = create<Store>()(
         },
         acknowledgeYear: () => update(acknowledgeYear),
         acceptOffer: (index) => update((g) => acceptOffer(g, index)),
+        negotiateOffer: (index, percent) => update((g) => negotiateOffer(g, index, percent)),
         declineOffers: () => update(declineOffers),
         chooseTrack: (track) => update((g) => chooseTrack(g, track)),
         lastApplication: null,
